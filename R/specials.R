@@ -1,11 +1,11 @@
 specials_gam <- new_specials(
-  trend = function() {
+  trend = function(){
     list(term = "trend")
   },
-  season = function(period) {
+  season = function(period){
     list(period = period)
   },
-  xreg = function(...) {
+  xreg = function(...){
     exprs <- enquos(...)
     list(xreg_terms = exprs)
   }

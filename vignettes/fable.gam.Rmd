@@ -1,8 +1,34 @@
 ---
-output: rmarkdown::github_document
+title: "Introduction to fable.gam"
+author: "Trent Henderson"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 4
+vignette: >
+  %\VignetteIndexEntry{Introduction to fable.gam}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
-# fable.gam
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.height = 5,
+  fig.width = 6,
+  warning = FALSE,
+  fig.align = "center"
+)
+```
+
+```{r setup, message = FALSE, warning = FALSE}
+library(tsibble)
+library(dplyr)
+library(fable)
+library(fable.gam)
+```
 
 This package provides a tidy R interface to time-series modelling using [generalised additive models](https://en.wikipedia.org/wiki/Generalized_additive_model) (GAMs) using [fable](https://github.com/tidyverts/fable). This package makes use of the [mgcv package](https://cran.r-project.org/package=mgcv) for R. While not particularly common, GAMs have shown incredible utility in time-series modelling, such as in the context of [palaeoecological data](https://www.frontiersin.org/journals/ecology-and-evolution/articles/10.3389/fevo.2018.00149/full). This package aims to incorporate the broad conceptual approach of using [structural time-series models](https://blog.tensorflow.org/2019/03/structural-time-series-modeling-in.html) within a GAM setup into the incredible `fable` forecasting framework.
 
@@ -11,22 +37,7 @@ knitr::opts_chunk$set(
 comment = NA, fig.width = 12, fig.height = 8, cache = FALSE)
 ```
 
-## Installation
-
-You can install the development version of `fable.gam` from GitHub using the following:
-
-```{r eval = FALSE}
-devtools::install_github("hendersontrent/fable.gam")
-```
-
-## Quick tour
-
-```{r, warning=FALSE, message=FALSE}
-library(tsibble)
-library(dplyr)
-library(fable)
-library(fable.gam)
-```
+## Walkthrough of package functionality
 
 Just like in the [`fable` vignette](https://fable.tidyverts.org/articles/fable.html) we are going to try and forecast the number of domestic travellers to Melbourne, Australia. In the [`tsibble::tourism`](https://tsibble.tidyverts.org/reference/tourism.html) data set, this can be further broken down into 4 reasons of travel: `“business”`, `“holiday”`, `“visiting friends and relatives”` and `“other reasons”`. The variable we are going to try and forecast is the number of overnight trips (000s) represented by the `Trips` variable. We can load the dataset and visualise the time series as follows:
 
@@ -99,7 +110,3 @@ tourism_melb %>%
   forecast(h = "5 years") %>%
   autoplot(tourism_melb)
 ```
-
-## Development notes
-
-`fable.gam` is very much a work in progress. Not all current `fable` model functionality has been integrated yet and there may be issues with model estimation until further testing and validation is performed.
