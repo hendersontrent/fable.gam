@@ -19,9 +19,8 @@
 A list of forecasts
 }
 \description{
-If additional future information is required (such as exogenous variables or
-carrying capacities) by the model, then they should be included as variables
-of the `new_data` argument.
+If additional future information is required, such as exogenous variables,
+then they should be included as variables of the `new_data` argument.
 }
 \examples{
 
