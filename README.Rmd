@@ -1,0 +1,99 @@
+---
+output: rmarkdown::github_document
+---
+
+# fable.gam
+
+This package provides a tidy R interface to time-series modelling using [generalised additive models](https://en.wikipedia.org/wiki/Generalized_additive_model) (GAMs) using [fable](https://github.com/tidyverts/fable). This package makes use of the [mgcv package](https://cran.r-project.org/package=mgcv) for R. While not particularly common, GAMs have shown incredible utility in time-series modelling, such as in the context of [palaeoecological data](https://www.frontiersin.org/journals/ecology-and-evolution/articles/10.3389/fevo.2018.00149/full). This package aims to incorporate the broad conceptual approach of using [structural time-series models](https://blog.tensorflow.org/2019/03/structural-time-series-modeling-in.html) within a GAM setup into the incredible `fable` forecasting framework.
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+comment = NA, fig.width = 12, fig.height = 8, cache = FALSE)
+```
+
+## Installation
+
+You can install the development version of `fable.gam` from GitHub using the following:
+
+```{r eval = FALSE}
+devtools::install_github("hendersontrent/fable.gam")
+```
+
+## Quick tour of fable.gam
+
+```{r, warning=FALSE, message=FALSE}
+library(tsibble)
+library(dplyr)
+library(fable)
+library(fable.gam)
+```
+
+Just like in the [`fable` vignette]() we are going to try and forecast the number of domestic travellers to Melbourne, Australia. In the [`tsibble::tourism`](https://tsibble.tidyverts.org/reference/tourism.html) data set, this can be further broken down into 4 reasons of travel: “business”, “holiday”, “visiting friends and relatives” and “other reasons”. The variable we are going to try and forecast is the number of overnight trips (000s) represented by the Trips variable. We can load the dataset and visualise the time series as follows:
+
+```{r}
+tourism_melb <- tourism %>%
+  filter(Region == "Melbourne")
+
+tourism_melb %>%
+  autoplot(Trips)
+```
+
+Thanks to the `tsibble` data structure we know that the time index for this dataset is quarterly. With that in mind, we are going to fit a simple time-series GAM using a (non)linear trend term and a seasonal term with a periodicity of 4. This is made easy in `fable.gam` through the usage of the `fabletools` 'special' functions `trend` and `season` which have been modified for the purposes of GAMs. Under the hood, `fable.gam` parses a `trend()` call as modelling a smooth function over time to capture temporal effects and a `season()` call as a smooth function using a [cyclic cubic basis spline](https://fromthebottomoftheheap.net/2014/05/09/modelling-seasonal-data-with-gam/) to ensure that over the duration of the time series, the start and end of the seasons connect (e.g., in data measured monthly in calendar years, the end of monthly seasonal term -- i.e., December -- needs to connect continuously to the start of the following January).
+
+```{r}
+fit <- tourism_melb %>%
+  model(mygam = GAM(Trips ~ trend() + season(4)))
+```
+
+We can then easily pipe into the rest of the `fable` functionality, such as `forecast`. Here are automatic forecasts using the GAM for the next 5 years:
+
+```{r}
+fc <- fit %>%
+  forecast(h = "5 years")
+
+fc %>%
+  autoplot(tourism_melb)
+```
+
+Or maybe you want to quantify model accuracy, arranged by mean absolute squared error:
+
+```{r}
+fit %>%
+  accuracy() %>%
+  arrange(MASE)
+```
+
+Or maybe you want to extract point forecasts and confidence intervals from the forecast distribution:
+
+```{r}
+fc %>%
+  hilo(level = c(80, 95))
+```
+
+Hopefully this is starting to highlight the power of why integrating new methods into the `fable` framework is so powerful!
+
+### Comparison to common time-series methods
+
+We can perform a quick sense-check of the approach against more commonly-used forecasting methods such as [exponential smoothing](https://otexts.com/fpp3/expsmooth.html). Here we will just specify an additive trend for the ETS model and let the other components be determined automatically:
+
+```{r}
+tourism_melb %>%
+  model(
+    mygam = GAM(Trips ~ trend() + season(4)),
+    ets = ETS(Trips ~ trend("A"))
+  ) %>%
+  forecast(h = "5 years") %>%
+  autoplot(tourism_melb)
+```
+
+Or maybe we want to compare against an [ARIMA model](https://otexts.com/fpp3/arima.html):
+
+```{r}
+tourism_melb %>%
+  model(
+    mygam = GAM(Trips ~ trend() + season(4)),
+    arima = ARIMA(Trips)
+  ) %>%
+  forecast(h = "5 years") %>%
+  autoplot(tourism_melb)
+```

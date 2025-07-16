@@ -1,0 +1,34 @@
+Package: fable.gam
+Type: Package
+Title: Generalised Additive Modelling Interface for 'fable'
+Version: 0.1.0
+Date: 2025-07-16
+Authors@R: c(
+  person("Trent", "Henderson", email = "then6675@uni.sydney.edu.au", role = c("cre", "aut"))
+  )
+Maintainer: Trent Henderson <then6675@uni.sydney.edu.au>
+Description: Allows GAMs from the 'mgcv' package to be used in a tidy workflow with the modelling interface of 'fabletools'.
+BugReports: https://github.com/hendersontrent/fable.gam/issues
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 3.5.0),
+    fabletools (>= 0.2.0)
+Imports:
+    rlang,
+    tsibble,
+    mgcv,
+    dplyr,
+    distributional
+Suggests: 
+    lifecycle,
+    cachem,
+    bslib,
+    knitr,
+    rmarkdown,
+    pkgdown,
+    testthat
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+RoxygenNote: 7.2.3
