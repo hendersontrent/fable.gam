@@ -12,7 +12,9 @@ data](https://www.frontiersin.org/journals/ecology-and-evolution/articles/10.338
 This package aims to incorporate the broad conceptual approach of using
 [structural time-series
 models](https://blog.tensorflow.org/2019/03/structural-time-series-modeling-in.html)
-within a GAM setup into the incredible `fable` forecasting framework.
+(i.e., decomposing a time series into its trend, seasonality, error, and
+other components and modelling them additively) within a GAM setup into
+the incredible `fable` forecasting framework.
 
 ## Installation
 
@@ -148,13 +150,15 @@ We can perform a quick sense-check of the approach against more
 commonly-used forecasting methods such as [exponential
 smoothing](https://otexts.com/fpp3/expsmooth.html). Here we will just
 specify an additive trend for the ETS model and let the other components
-be determined automatically:
+be determined automatically. We will also log-transform the response
+variable to show that `fable.gam` handles these transformations
+automatically as well, just like all models in `fable`.
 
 ``` r
 tourism_melb %>%
   model(
-    mygam = GAM(Trips ~ trend() + season(4)),
-    ets = ETS(Trips ~ trend("A"))
+    mygam = GAM(log(Trips) ~ trend() + season(4)),
+    ets = ETS(log(Trips) ~ trend("A"))
   ) %>%
   forecast(h = "5 years") %>%
   autoplot(tourism_melb)
