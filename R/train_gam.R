@@ -1,9 +1,11 @@
 train_gam <- function(.data, specials, ...){
 
+  colnames(.data)[colnames(.data) == measured_vars(.data)] <- "response"
   resp <- tsibble::measured_vars(.data)[[1]]
   idx <- tsibble::index_var(.data)
   data <- tsibble::as_tibble(.data)
   data$time <- as.numeric(data[[idx]])
+  data$response <- data[[resp]]
 
   # Build the GAM formula dynamically
 
@@ -32,20 +34,18 @@ train_gam <- function(.data, specials, ...){
     }
   }
 
-  formula_str <- paste(resp, "~", paste(rhs_terms, collapse = " + "))
-  formula_obj <- stats::as.formula(formula_str)
+  lhs <- rlang::sym(resp)
+  rhs <- rlang::parse_expr(paste(rhs_terms, collapse = " + "))
+  formula_obj <- rlang::new_formula(lhs, rhs)
 
   fit <- mgcv::gam(formula_obj, data = data, ...)
 
   structure(
-    list(model = fit),
+    list(model = fit,
+         response = resp),
     class = "fbl_gam"
   )
 }
-
-#--------------- Classes ----------------
-
-gam_model <- new_model_class("GAM", train_gam, specials_gam)
 
 #--------------- Core interface function ----------------
 
@@ -100,5 +100,6 @@ gam_model <- new_model_class("GAM", train_gam, specials_gam)
 #' @export
 #'
 GAM <- function(formula, ...){
+  gam_model <- fabletools::new_model_class("GAM", train = train_gam, specials = specials_gam)
   fabletools::new_model_definition(gam_model, !!enquo(formula), ...)
 }
