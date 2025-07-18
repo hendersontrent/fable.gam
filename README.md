@@ -181,6 +181,47 @@ tourism_melb %>%
 
 ![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
+### Controlling the smooth function of the time trend
+
+In addition to the `trend()` and `season()` special functions,
+`fable.gam` also includes the special `trend2()` which lets users
+control the smooth term fit to the temporal trend. `trend2()` takes
+arguments `k` (the dimension of the basis used to represent the smooth
+term; i.e., the number of knots) and `bs` (a two letter character string
+indicating the smoothing basis to use). Here is an example where we
+specify a basis of 5 and a [Gaussian
+process](https://en.wikipedia.org/wiki/Gaussian_process) smooth:
+
+``` r
+tourism_melb %>%
+  model(mygam = GAM(Trips ~ trend2(k = 5, bs = "gp") + season(4))) %>%
+  forecast(h = "5 years") %>%
+  autoplot(tourism_melb)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+### Model fit
+
+The suite of `fable` functions for interpreting trained models are also
+available to `GAM` models fit using `fable.gam`. `glance()` is one such
+example:
+
+``` r
+tourism_melb %>%
+  model(mygam = GAM(Trips ~ trend2(k = 5, bs = "gp") + season(4))) %>%
+  glance()
+```
+
+    # A tibble: 4 × 14
+      Region    State  Purpose .model r_squared adj_r_squared deviance    df log_lik
+      <chr>     <chr>  <chr>   <chr>      <dbl>         <dbl>    <dbl> <dbl>   <dbl>
+    1 Melbourne Victo… Busine… mygam      0.608         0.608  213794.  74.1   -429.
+    2 Melbourne Victo… Holiday mygam      0.780         0.780  171568.  73.6   -420.
+    3 Melbourne Victo… Other   mygam      0.641         0.641   31195.  75.9   -352.
+    4 Melbourne Victo… Visiti… mygam      0.514         0.514  317687.  74.5   -445.
+    # ℹ 5 more variables: AIC <dbl>, BIC <dbl>, edf <dbl>, GCV <dbl>, scale <lgl>
+
 ## Development notes
 
 `fable.gam` is very much a work in progress. Not all current `fable`

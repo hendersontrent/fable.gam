@@ -6,6 +6,7 @@
 #' @description Generalised Additive Modelling Interface for 'fable'
 #'
 #' @import rlang
+#' @import tibble
 #' @import tsibble
 #' @import fabletools
 #' @import mgcv

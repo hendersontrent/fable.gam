@@ -1,25 +1,42 @@
 train_gam <- function(.data, specials, ...){
 
+  if(length(tsibble::measured_vars(.data)) > 1){
+    abort("Only univariate responses are currently supported by GAM.")
+  }
+
+  if(nrow(.data) < 5){
+    abort("Insufficient data to fit a GAM.")
+  }
+
   colnames(.data)[colnames(.data) == measured_vars(.data)] <- "response"
   resp <- tsibble::measured_vars(.data)[[1]]
   idx <- tsibble::index_var(.data)
   data <- tsibble::as_tibble(.data)
-  data$time <- as.numeric(data[[idx]])
+  data$timevarnumeric <- as.numeric(data[[idx]])
   data$response <- data[[resp]]
+
+  if(all(is.na(data$response))){
+    abort("All observations are missing, a model cannot be estimated without data.")
+  }
 
   # Build the GAM formula dynamically
 
   rhs_terms <- c()
 
-  # Add trend() represented {mgcv} style as: s(time)
+  # If applicable, add user's custom specified trend smooth
 
-  if (!is.null(specials$trend)){
-    rhs_terms <- c(rhs_terms, "s(time)")
+  if(!is.null(specials$trend2)){
+    rhs_terms <- c(rhs_terms, as.character(paste0("s(timevarnumeric, ", "k = ", specials$trend2[[1]]$k,
+                                                  ", bs = '", specials$trend2[[1]]$bs, "')")))
+  } else{
+    if(!is.null(specials$trend)){
+      rhs_terms <- c(rhs_terms, "s(timevarnumeric)") # Add trend() represented {mgcv} style as: s(time)
+    }
   }
 
   # Add each season() represented {mgcv} style as: s(season_index, bs = 'cc', k = period, ...)
 
-  for (season_spec in specials$season){
+  for(season_spec in specials$season){
     period <- season_spec$period
     season_var <- paste0("season_", period)
     data[[season_var]] <- cycle_id(.data, period)
@@ -28,8 +45,8 @@ train_gam <- function(.data, specials, ...){
 
   # Add any xreg terms
 
-  if (!is.null(specials$xreg)){
-    for (x in specials$xreg$xreg_terms){
+  if(!is.null(specials$xreg)){
+    for(x in specials$xreg$xreg_terms){
       rhs_terms <- c(rhs_terms, rlang::as_label(x))
     }
   }

@@ -2,7 +2,7 @@ Package: fable.gam
 Type: Package
 Title: Generalised Additive Modelling Interface for 'fable'
 Version: 0.1.0
-Date: 2025-07-17
+Date: 2025-07-18
 Authors@R: c(
   person("Trent", "Henderson", email = "then6675@uni.sydney.edu.au", role = c("cre", "aut"))
   )
@@ -17,6 +17,7 @@ Depends:
     fabletools (>= 0.2.0)
 Imports:
     rlang,
+    tibble,
     tsibble,
     mgcv,
     dplyr,
