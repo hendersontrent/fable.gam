@@ -100,6 +100,27 @@ tourism_melb %>%
   autoplot(tourism_melb)
 ```
 
+### Controlling the smooth function of the time trend
+
+In addition to the `trend()` and `season()` special functions, `fable.gam` also includes the special `trend2()` which lets users control the smooth term fit to the temporal trend. `trend2()` takes arguments `k` (the dimension of the basis used to represent the smooth term; i.e., the number of knots) and `bs` (a two letter character string indicating the smoothing basis to use). Here is an example where we specify a basis of 5 and a [Gaussian process](https://en.wikipedia.org/wiki/Gaussian_process) smooth:
+
+```{r}
+tourism_melb %>%
+  model(mygam = GAM(Trips ~ trend2(k = 5, bs = "gp") + season(4))) %>%
+  forecast(h = "5 years") %>%
+  autoplot(tourism_melb)
+```
+
+### Model fit
+
+The suite of `fable` functions for interpreting trained models are also available to `GAM` models fit using `fable.gam`. `glance()` is one such example:
+
+```{r}
+tourism_melb %>%
+  model(mygam = GAM(Trips ~ trend2(k = 5, bs = "gp") + season(4))) %>%
+  glance()
+```
+
 ## Development notes
 
 `fable.gam` is very much a work in progress. Not all current `fable` model functionality has been integrated yet and there may be issues with model estimation until further testing and validation is performed.
