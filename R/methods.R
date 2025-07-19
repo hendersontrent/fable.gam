@@ -34,7 +34,7 @@ forecast.fbl_gam <- function(object, new_data, specials = NULL, ...){
   for(season_spec in specials$season){
     period <- season_spec$period
     season_var <- paste0("season_", period)
-    new_data[[season_var]] <- cycle_id(new_data, period)
+    new_data[[season_var]] <- get_season_var(new_data, idx_var, period)
   }
 
   # Calculate predictions
@@ -108,7 +108,7 @@ format.fbl_gam <- function(x, ...){
 #'   glance()
 #' }
 #' @export
-glance.fbl_gam <- function(x, ...) {
+glance.fbl_gam <- function(x, ...){
   fit <- x$model
   tibble::tibble(
     r_squared = summary(fit)$r.sq,
@@ -135,7 +135,7 @@ glance.fbl_gam <- function(x, ...) {
 #'   tidy()
 #' }
 #' @export
-tidy.fbl_gam <- function(x, ...) {
+tidy.fbl_gam <- function(x, ...){
   fit <- x$model
   summ <- summary(fit)
   coefs <- as.data.frame(summ$p.table)
@@ -149,7 +149,7 @@ tidy.fbl_gam <- function(x, ...) {
 }
 
 #' @export
-report.fbl_gam <- function(object, digits = max(3, getOption("digits") - 3), ...) {
+report.fbl_gam <- function(object, digits = max(3, getOption("digits") - 3), ...){
   cat("\nGAM model report:\n")
   glance_obj <- glance(object)
   coef_tbl <- tidy(object)
@@ -170,6 +170,6 @@ report.fbl_gam <- function(object, digits = max(3, getOption("digits") - 3), ...
 }
 
 #' @export
-refit.fbl_gam <- function(object, new_data, specials = NULL, ...) {
+refit.fbl_gam <- function(object, new_data, specials = NULL, ...){
   train_gam(new_data, specials = specials, ...)
 }

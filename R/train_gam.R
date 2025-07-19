@@ -39,7 +39,7 @@ train_gam <- function(.data, specials, ...){
   for(season_spec in specials$season){
     period <- season_spec$period
     season_var <- paste0("season_", period)
-    data[[season_var]] <- cycle_id(.data, period)
+    data[[season_var]] <- get_season_var(data, idx, period)
     rhs_terms <- c(rhs_terms, paste0("s(", season_var, ", bs = 'cc', k = ", period, ")")) # Cyclic cubic spline to ensure season start and end match up
   }
 
