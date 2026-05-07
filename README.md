@@ -30,8 +30,10 @@ devtools::install_github("hendersontrent/fable.gam")
 ``` r
 library(tsibble)
 library(dplyr)
+library(ggplot2)
 library(fable)
 library(fable.gam)
+library(tsibbledata)
 ```
 
 Just like in the [`fable`
@@ -42,18 +44,7 @@ Australia. In the
 data set, this can be further broken down into 4 reasons of travel:
 `“business”`, `“holiday”`, `“visiting friends and relatives”` and
 `“other reasons”`. The variable we are going to try and forecast is the
-number of overnight trips (000s) represented by the `Trips` variable. We
-can load the dataset and visualise the time series as follows:
-
-``` r
-tourism_melb <- tourism %>%
-  filter(Region == "Melbourne")
-
-tourism_melb %>%
-  autoplot(Trips)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+number of overnight trips (000s) represented by the `Trips` variable.
 
 Thanks to the excellent `tsibble` data structure for storing time-series
 data in R we know that this data is sampled quarterly. With that in
@@ -75,7 +66,10 @@ Here is how easy this is to do in `fable.gam` through the `GAM()`
 function integrated into the `fable` interface:
 
 ``` r
-fit <- tourism_melb %>%
+tourism_melb <- tsibble::tourism |>
+  filter(Region == "Melbourne")
+
+fit <- tourism_melb |>
   model(mygam = GAM(Trips ~ trend() + season(4)))
 ```
 
@@ -84,31 +78,31 @@ as the `forecast` to produce forecasts. Here are automatic forecasts
 using the GAM for the next 5 years:
 
 ``` r
-fc <- fit %>%
+fc <- fit |>
   forecast(h = "5 years")
 
-fc %>%
+fc |>
   autoplot(tourism_melb)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 We could then quantify model accuracy using the `accuracy` function in
 `fable`:
 
 ``` r
-fit %>%
-  accuracy() %>%
+fit |>
+  accuracy() |>
   arrange(MASE)
 ```
 
     # A tibble: 4 × 13
-      Region    State   Purpose .model .type       ME  RMSE   MAE    MPE  MAPE  MASE
-      <chr>     <chr>   <chr>   <chr>  <chr>    <dbl> <dbl> <dbl>  <dbl> <dbl> <dbl>
-    1 Melbourne Victor… Busine… mygam  Trai… 1.28e-13  49.6  39.5 -1.28   8.67 0.636
-    2 Melbourne Victor… Holiday mygam  Trai… 2.10e-13  46.7  36.3 -0.867  7.22 0.659
-    3 Melbourne Victor… Other   mygam  Trai… 2.99e-14  19.1  15.8 -4.63  18.0  0.709
-    4 Melbourne Victor… Visiti… mygam  Trai… 1.19e-13  62.1  50.5 -1.09   8.39 0.805
+      Region    State  Purpose .model .type        ME  RMSE   MAE    MPE  MAPE  MASE
+      <chr>     <chr>  <chr>   <chr>  <chr>     <dbl> <dbl> <dbl>  <dbl> <dbl> <dbl>
+    1 Melbourne Victo… Busine… mygam  Trai…  1.62e-14  52.0  39.7 -1.44   8.88 0.640
+    2 Melbourne Victo… Visiti… mygam  Trai…  9.20e-14  52.1  41.4 -0.751  6.76 0.660
+    3 Melbourne Victo… Holiday mygam  Trai…  1.37e-13  50.1  38.9 -0.990  7.79 0.706
+    4 Melbourne Victo… Other   mygam  Trai… -6.66e-15  19.1  15.8 -4.64  18.1  0.710
     # ℹ 2 more variables: RMSSE <dbl>, ACF1 <dbl>
 
 Another common task is to extract point forecasts and confidence
@@ -119,7 +113,7 @@ function from the
 package knows how to automatically handle models fit in `fable`:
 
 ``` r
-fc %>%
+fc |>
   hilo(level = c(80, 95))
 ```
 
@@ -155,31 +149,16 @@ variable to show that `fable.gam` handles these transformations
 automatically as well, just like all models in `fable`.
 
 ``` r
-tourism_melb %>%
+tourism_melb |>
   model(
     mygam = GAM(log(Trips) ~ trend() + season(4)),
     ets = ETS(log(Trips) ~ trend("A"))
-  ) %>%
-  forecast(h = "5 years") %>%
+  ) |>
+  forecast(h = "5 years") |>
   autoplot(tourism_melb)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
-
-Or maybe we want to compare against an [ARIMA
-model](https://otexts.com/fpp3/arima.html):
-
-``` r
-tourism_melb %>%
-  model(
-    mygam = GAM(Trips ~ trend() + season(4)),
-    arima = ARIMA(Trips)
-  ) %>%
-  forecast(h = "5 years") %>%
-  autoplot(tourism_melb)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ### Controlling the smooth function of the time trend
 
@@ -193,13 +172,13 @@ specify a basis of 5 and a [Gaussian
 process](https://en.wikipedia.org/wiki/Gaussian_process) smooth:
 
 ``` r
-tourism_melb %>%
-  model(mygam = GAM(Trips ~ trend2(k = 5, bs = "gp") + season(4))) %>%
-  forecast(h = "5 years") %>%
+tourism_melb |>
+  model(mygam = GAM(Trips ~ trend2(k = 5, bs = "gp") + season(4))) |>
+  forecast(h = "5 years") |>
   autoplot(tourism_melb)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ### Model fit
 
@@ -208,19 +187,48 @@ available to `GAM` models fit using `fable.gam`. `glance()` is one such
 example:
 
 ``` r
-tourism_melb %>%
-  model(mygam = GAM(Trips ~ trend2(k = 5, bs = "gp") + season(4))) %>%
+tourism_melb |>
+  model(mygam = GAM(Trips ~ trend2(k = 5, bs = "gp") + season(4))) |>
   glance()
 ```
 
-    # A tibble: 4 × 14
-      Region    State  Purpose .model r_squared adj_r_squared deviance    df log_lik
-      <chr>     <chr>  <chr>   <chr>      <dbl>         <dbl>    <dbl> <dbl>   <dbl>
-    1 Melbourne Victo… Busine… mygam      0.608         0.608  213794.  74.1   -429.
-    2 Melbourne Victo… Holiday mygam      0.780         0.780  171568.  73.6   -420.
-    3 Melbourne Victo… Other   mygam      0.641         0.641   31195.  75.9   -352.
-    4 Melbourne Victo… Visiti… mygam      0.514         0.514  317687.  74.5   -445.
-    # ℹ 5 more variables: AIC <dbl>, BIC <dbl>, edf <dbl>, GCV <dbl>, scale <lgl>
+    # A tibble: 4 × 13
+      Region State Purpose .model r_squared deviance    df log_lik   AIC   BIC   edf
+      <chr>  <chr> <chr>   <chr>      <dbl>    <dbl> <dbl>   <dbl> <dbl> <dbl> <dbl>
+    1 Melbo… Vict… Busine… mygam      0.569  235947.  74.2   -433.  880.  896.  5.79
+    2 Melbo… Vict… Holiday mygam      0.752  197173.  74.9   -426.  864.  878.  5.06
+    3 Melbo… Vict… Other   mygam      0.641   31195.  75.9   -352.  714.  726.  4.06
+    4 Melbo… Vict… Visiti… mygam      0.640  231727.  73.4   -432.  880.  898.  6.61
+    # ℹ 2 more variables: GCV <dbl>, scale <dbl>
+
+## A more complicated example
+
+`fable.gam` also permits the ability to specify autocorrelated errors to
+capture residual serial correlation, just like you can do using a `gamm`
+instead of a `gam` in `mgcv`. Here is another example from
+[`fpp3`](https://otexts.com/fpp3/seasonal-arima.html) which is seasonal,
+autocorrelated data with a small trend (note the addition of the
+`fable.gam` special `errors(ar = 2)` which captures the autocorrelation
+at lag 2 identified in `fpp3`).
+
+``` r
+h02 <- tsibbledata::PBS |>
+  filter(ATC2 == "H02") |>
+  summarise(Cost = sum(Cost) / 1e6)
+
+h02 |>
+  model(
+    mygam = GAM(log(Cost) ~ trend() + season(12) + errors(ar = 2)),
+    arima = ARIMA(log(Cost) ~ 0 + pdq(3, 0, 1) + PDQ(0, 1, 2))
+    ) |>
+  forecast() |>
+  autoplot(h02) +
+  labs(y = " $AU (millions)",
+       title = "Corticosteroid drug scripts (H02) sales") +
+  theme(legend.position = "bottom")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ## Development notes
 

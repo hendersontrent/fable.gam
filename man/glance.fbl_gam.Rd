@@ -21,11 +21,15 @@ Construct a single row summary of the GAM model.
 Contains a range of model fit statistics.
 }
 \examples{
-if (requireNamespace("tsibble")) {
-library(tsibble)
-tsibble::tourism \%>\%
-  filter(Region == "Melbourne") \%>\%
-  model(mygam = GAM(Trips ~ trend() + season(4))) \%>\%
+\donttest{
+tourism_melb <- tsibble::tourism |>
+  filter(Region == "Melbourne") |>
+  filter(Purpose == "Business") |>
+  dplyr::select(c(Quarter, Region, Trips)) |>
+  as_tsibble(key = Region, index = Quarter)
+
+fit <- tourism_melb |>
+  model(mygam = GAM(Trips ~ trend() + season(4))) |>
   glance()
 }
 }

@@ -6,15 +6,24 @@
 \usage{
 \method{tidy}{fbl_gam}(x, ...)
 }
+\arguments{
+\item{x}{\code{fbl_gam} object}
+
+\item{...}{arguments to be passed to methods}
+}
 \description{
 Present a tidy summary of a GAM
 }
 \examples{
-if (requireNamespace("tsibble")) {
-library(tsibble)
-tsibble::tourism \%>\%
-  filter(Region == "Melbourne") \%>\%
-  model(mygam = GAM(Trips ~ trend() + season(4))) \%>\%
+\donttest{
+tourism_melb <- tsibble::tourism |>
+  filter(Region == "Melbourne") |>
+  filter(Purpose == "Business") |>
+  dplyr::select(c(Quarter, Region, Trips)) |>
+  as_tsibble(key = Region, index = Quarter)
+
+fit <- tourism_melb |>
+  model(mygam = GAM(Trips ~ trend() + season(4))) |>
   tidy()
 }
 }

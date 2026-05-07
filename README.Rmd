@@ -24,51 +24,48 @@ devtools::install_github("hendersontrent/fable.gam")
 ```{r, warning=FALSE, message=FALSE}
 library(tsibble)
 library(dplyr)
+library(ggplot2)
 library(fable)
 library(fable.gam)
+library(tsibbledata)
 ```
 
-Just like in the [`fable` vignette](https://fable.tidyverts.org/articles/fable.html) we are going to try and forecast the number of domestic travellers to Melbourne, Australia. In the [`tsibble::tourism`](https://tsibble.tidyverts.org/reference/tourism.html) data set, this can be further broken down into 4 reasons of travel: `“business”`, `“holiday”`, `“visiting friends and relatives”` and `“other reasons”`. The variable we are going to try and forecast is the number of overnight trips (000s) represented by the `Trips` variable. We can load the dataset and visualise the time series as follows:
-
-```{r}
-tourism_melb <- tourism %>%
-  filter(Region == "Melbourne")
-
-tourism_melb %>%
-  autoplot(Trips)
-```
+Just like in the [`fable` vignette](https://fable.tidyverts.org/articles/fable.html) we are going to try and forecast the number of domestic travellers to Melbourne, Australia. In the [`tsibble::tourism`](https://tsibble.tidyverts.org/reference/tourism.html) data set, this can be further broken down into 4 reasons of travel: `“business”`, `“holiday”`, `“visiting friends and relatives”` and `“other reasons”`. The variable we are going to try and forecast is the number of overnight trips (000s) represented by the `Trips` variable.
 
 Thanks to the excellent `tsibble` data structure for storing time-series data in R we know that this data is sampled quarterly. With that in mind, we are going to fit a simple time-series GAM using a (non)linear trend term and a seasonal term with a periodicity of 4. This is made easy in `fable.gam` through the usage of the `fabletools` 'special' functions `trend` and `season` which have been modified in `fable.gam` for the purposes of GAMs. Under the hood, `fable.gam` parses a `trend()` call as modelling a smooth function over time to capture temporal effects and a `season()` call as a smooth function using a [cyclic cubic basis spline](https://fromthebottomoftheheap.net/2014/05/09/modelling-seasonal-data-with-gam/) to ensure that over the duration of the time series, the start and end of a seasonal term connects (e.g., for data measured on a monthly basis, the end of final month -- December -- needs to connect continuously to the start of the following January).
 
 Here is how easy this is to do in `fable.gam` through the `GAM()` function integrated into the `fable` interface:
 
 ```{r}
-fit <- tourism_melb %>%
+tourism_melb <- tsibble::tourism |>
+  filter(Region == "Melbourne")
+
+fit <- tourism_melb |>
   model(mygam = GAM(Trips ~ trend() + season(4)))
 ```
 
 We can then easily pipe into the rest of the `fable` functionality, such as the `forecast` to produce forecasts. Here are automatic forecasts using the GAM for the next 5 years:
 
 ```{r}
-fc <- fit %>%
+fc <- fit |>
   forecast(h = "5 years")
 
-fc %>%
+fc |>
   autoplot(tourism_melb)
 ```
 
 We could then quantify model accuracy using the `accuracy` function in `fable`:
 
 ```{r}
-fit %>%
-  accuracy() %>%
+fit |>
+  accuracy() |>
   arrange(MASE)
 ```
 
 Another common task is to extract point forecasts and confidence intervals from the forecast distribution. The [`hilo`](https://pkg.mitchelloharawild.com/distributional/reference/hilo.html) function from the [`distributional`](https://github.com/mitchelloharawild/distributional) package knows how to automatically handle models fit in `fable`:
 
 ```{r}
-fc %>%
+fc |>
   hilo(level = c(80, 95))
 ```
 
@@ -79,24 +76,12 @@ Hopefully this is starting to highlight the power of why integrating new methods
 We can perform a quick sense-check of the approach against more commonly-used forecasting methods such as [exponential smoothing](https://otexts.com/fpp3/expsmooth.html). Here we will just specify an additive trend for the ETS model and let the other components be determined automatically. We will also log-transform the response variable to show that `fable.gam` handles these transformations automatically as well, just like all models in `fable`.
 
 ```{r}
-tourism_melb %>%
+tourism_melb |>
   model(
     mygam = GAM(log(Trips) ~ trend() + season(4)),
     ets = ETS(log(Trips) ~ trend("A"))
-  ) %>%
-  forecast(h = "5 years") %>%
-  autoplot(tourism_melb)
-```
-
-Or maybe we want to compare against an [ARIMA model](https://otexts.com/fpp3/arima.html):
-
-```{r}
-tourism_melb %>%
-  model(
-    mygam = GAM(Trips ~ trend() + season(4)),
-    arima = ARIMA(Trips)
-  ) %>%
-  forecast(h = "5 years") %>%
+  ) |>
+  forecast(h = "5 years") |>
   autoplot(tourism_melb)
 ```
 
@@ -105,9 +90,9 @@ tourism_melb %>%
 In addition to the `trend()` and `season()` special functions, `fable.gam` also includes the special `trend2()` which lets users control the smooth term fit to the temporal trend. `trend2()` takes arguments `k` (the dimension of the basis used to represent the smooth term; i.e., the number of knots) and `bs` (a two letter character string indicating the smoothing basis to use). Here is an example where we specify a basis of 5 and a [Gaussian process](https://en.wikipedia.org/wiki/Gaussian_process) smooth:
 
 ```{r}
-tourism_melb %>%
-  model(mygam = GAM(Trips ~ trend2(k = 5, bs = "gp") + season(4))) %>%
-  forecast(h = "5 years") %>%
+tourism_melb |>
+  model(mygam = GAM(Trips ~ trend2(k = 5, bs = "gp") + season(4))) |>
+  forecast(h = "5 years") |>
   autoplot(tourism_melb)
 ```
 
@@ -116,9 +101,30 @@ tourism_melb %>%
 The suite of `fable` functions for interpreting trained models are also available to `GAM` models fit using `fable.gam`. `glance()` is one such example:
 
 ```{r}
-tourism_melb %>%
-  model(mygam = GAM(Trips ~ trend2(k = 5, bs = "gp") + season(4))) %>%
+tourism_melb |>
+  model(mygam = GAM(Trips ~ trend2(k = 5, bs = "gp") + season(4))) |>
   glance()
+```
+
+## A more complicated example
+
+`fable.gam` also permits the ability to specify autocorrelated errors to capture residual serial correlation, just like you can do using a `gamm` instead of a `gam` in `mgcv`. Here is another example from [`fpp3`](https://otexts.com/fpp3/seasonal-arima.html) which is seasonal, autocorrelated data with a small trend (note the addition of the `fable.gam` special `errors(ar = 2)` which captures the autocorrelation at lag 2 identified in `fpp3`).
+
+```{r, message=FALSE, warning=FALSE}
+h02 <- tsibbledata::PBS |>
+  filter(ATC2 == "H02") |>
+  summarise(Cost = sum(Cost) / 1e6)
+
+h02 |>
+  model(
+    mygam = GAM(log(Cost) ~ trend() + season(12) + errors(ar = 2)),
+    arima = ARIMA(log(Cost) ~ 0 + pdq(3, 0, 1) + PDQ(0, 1, 2))
+    ) |>
+  forecast() |>
+  autoplot(h02) +
+  labs(y = " $AU (millions)",
+       title = "Corticosteroid drug scripts (H02) sales") +
+  theme(legend.position = "bottom")
 ```
 
 ## Development notes
