@@ -5,10 +5,12 @@
 #'
 #' @description Generalised Additive Modelling Interface for 'fable'
 #'
+#' @importFrom stats fitted residuals
 #' @import rlang
 #' @import tibble
 #' @import tsibble
 #' @import fabletools
+#' @import fable
 #' @import mgcv
 #' @import dplyr
 #' @import distributional

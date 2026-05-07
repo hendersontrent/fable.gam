@@ -5,17 +5,16 @@ train_gam <- function(.data, specials, ...){
   }
 
   if(nrow(.data) < 5){
-    abort("Insufficient data to fit a GAM.")
+    abort("Insufficient data to fit a GAM.") # Probably need a better threshold...
   }
 
-  colnames(.data)[colnames(.data) == measured_vars(.data)] <- "response"
   resp <- tsibble::measured_vars(.data)[[1]]
   idx <- tsibble::index_var(.data)
   data <- tsibble::as_tibble(.data)
+  data$.gam_response <- data[[resp]] # Copy the response into a safe column name in the case of transformations in `fable` like `log()`
   data$timevarnumeric <- as.numeric(data[[idx]])
-  data$response <- data[[resp]]
 
-  if(all(is.na(data$response))){
+  if(all(is.na(data$.gam_response))){
     abort("All observations are missing, a model cannot be estimated without data.")
   }
 
@@ -46,19 +45,33 @@ train_gam <- function(.data, specials, ...){
   # Add any xreg terms
 
   if(!is.null(specials$xreg)){
-    for(x in specials$xreg$xreg_terms){
-      rhs_terms <- c(rhs_terms, rlang::as_label(x))
+    for(xreg_call in specials$xreg){
+      for(x in xreg_call$xreg_terms){
+        rhs_terms <- c(rhs_terms, rlang::as_label(x))
+      }
     }
   }
 
-  lhs <- rlang::sym(resp)
+  lhs <- rlang::sym(".gam_response")
   rhs <- rlang::parse_expr(paste(rhs_terms, collapse = " + "))
   formula_obj <- rlang::new_formula(lhs, rhs)
 
-  fit <- mgcv::gam(formula_obj, data = data, ...)
+  # Use gamm() with AR correlation structure if errors() special is specified, otherwise use standard gam()
+
+  if(!is.null(specials$errors)){
+    ar_order <- specials$errors[[1]]$ar
+    fit_full <- mgcv::gamm(formula_obj, data = data,
+                           correlation = nlme::corARMA(p = ar_order, q = 0), ...)
+    fit <- fit_full$gam
+    lme_fit <- fit_full$lme
+  }else{
+    fit <- mgcv::gam(formula_obj, data = data, ...)
+    lme_fit <- NULL
+  }
 
   structure(
     list(model = fit,
+         lme = lme_fit,
          response = resp),
     class = "fbl_gam"
   )
@@ -103,15 +116,35 @@ train_gam <- function(.data, specials, ...){
 #' Exogenous regressors can be passed into `GAM` just like a regular `mgcv::gam` call by specifying the variable name or any smooth terms you want to model.
 #' }
 #'
+#' \subsection{errors}{
+#' The `errors` special adds an AR(p) correlation structure to the model residuals via `mgcv::gamm()`.
+#' When specified, the model is fit using `gamm()` instead of `gam()`, which accounts for autocorrelation
+#' remaining in the residuals after the smooth terms are included. This is analogous to dynamic regression
+#' (regression with ARIMA errors) in `fable`.
+#'
+#' \preformatted{
+#' errors(ar = 1)
+#' }
+#'
+#' \describe{
+#'   \item{ar}{Order of the autoregressive error process. Must be a positive integer. Default: 1.}
+#' }
+#' }
+#'
 #' @author Trent Henderson
 #'
 #'
 #' @examples
-#' if (requireNamespace("tsibble")) {
-#' library(tsibble)
-#' tsibble::tourism %>%
-#'   filter(Region == "Melbourne") %>%
-#'   model(mygam = GAM(Trips ~ trend() + season(4)))
+#' \donttest{
+#' tourism_melb <- tsibble::tourism |>
+#'   filter(Region == "Melbourne") |>
+#'   filter(Purpose == "Business") |>
+#'   dplyr::select(c(Quarter, Region, Trips)) |>
+#'   as_tsibble(key = Region, index = Quarter)
+#'
+#' fit <- tourism_melb |>
+#'   model(mygam = GAM(Trips ~ trend() + season(4))) |>
+#'   forecast(h = "5 years")
 #' }
 #'
 #' @export

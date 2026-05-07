@@ -13,13 +13,15 @@
 #' @examples
 #'
 #' \donttest{
-#' if (requireNamespace("tsibble")) {
-#' library(tsibble)
-#' tsibble::tourism %>%
-#'   filter(Region == "Melbourne") %>%
-#'   model(mygam = GAM(Trips ~ trend() + season(4))) %>%
+#' tourism_melb <- tsibble::tourism |>
+#'   filter(Region == "Melbourne") |>
+#'   filter(Purpose == "Business") |>
+#'   dplyr::select(c(Quarter, Region, Trips)) |>
+#'   as_tsibble(key = Region, index = Quarter)
+#'
+#' fit <- tourism_melb |>
+#'   model(mygam = GAM(Trips ~ trend() + season(4))) |>
 #'   forecast(h = "5 years")
-#' }
 #' }
 #'
 #' @export
@@ -40,7 +42,9 @@ forecast.fbl_gam <- function(object, new_data, specials = NULL, ...){
   # Calculate predictions
 
   preds <- stats::predict(model, newdata = new_data, se.fit = TRUE, ...)
-  distributional::dist_normal(preds$fit, preds$se.fit)
+  # Prediction SE combines mean uncertainty (se.fit) with residual variance (sig2),
+  # giving a proper prediction interval rather than a confidence interval for the mean
+  distributional::dist_normal(preds$fit, sqrt(preds$se.fit^2 + model$sig2))
 }
 
 #-------------- Fitted values and residuals --------------
@@ -81,7 +85,7 @@ residuals.fbl_gam <- function(object, ...){
 
 #' @export
 model_sum.fbl_gam <- function(x){
-  "gam"
+  if (!is.null(x$lme)) "GAM+AR" else "GAM"
 }
 
 #' @export
@@ -100,38 +104,63 @@ format.fbl_gam <- function(x, ...){
 #' @return A one row tibble summarising the model's fit.
 #'
 #' @examples
-#' if (requireNamespace("tsibble")) {
-#' library(tsibble)
-#' tsibble::tourism %>%
-#'   filter(Region == "Melbourne") %>%
-#'   model(mygam = GAM(Trips ~ trend() + season(4))) %>%
+#' \donttest{
+#' tourism_melb <- tsibble::tourism |>
+#'   filter(Region == "Melbourne") |>
+#'   filter(Purpose == "Business") |>
+#'   dplyr::select(c(Quarter, Region, Trips)) |>
+#'   as_tsibble(key = Region, index = Quarter)
+#'
+#' fit <- tourism_melb |>
+#'   model(mygam = GAM(Trips ~ trend() + season(4))) |>
 #'   glance()
 #' }
 #' @export
 glance.fbl_gam <- function(x, ...){
   fit <- x$model
-  tibble::tibble(
+
+  # When gamm() is used (for AR errors), AIC/BIC/logLik come from the `lme` component
+
+  if(!is.null(x$lme)){
+    log_lik_val <- as.numeric(stats::logLik(x$lme))
+    aic_val <- stats::AIC(x$lme)
+    bic_val <- stats::BIC(x$lme)
+  } else{
+    log_lik_val <- as.numeric(stats::logLik(fit))
+    aic_val <- stats::AIC(fit)
+    bic_val <- stats::BIC(fit)
+  }
+
+  outs <- tibble::tibble(
     r_squared = summary(fit)$r.sq,
-    adj_r_squared = summary(fit)$r.sq,  # GAM doesn't always report adj R^2
-    deviance = fit$deviance,
+    deviance = if(!is.null(x$lme)) NA else fit$deviance,
     df = fit$df.residual,
-    log_lik = as.numeric(stats::logLik(fit)),
-    AIC = stats::AIC(fit),
-    BIC = stats::BIC(fit),
+    log_lik = log_lik_val,
+    AIC = aic_val,
+    BIC = bic_val,
     edf = sum(fit$edf),
     GCV = fit$gcv.ubre,
-    scale = fit$scale
+    scale = fit$sig2
   )
+
+  return(outs)
 }
 
 #' Present a tidy summary of a GAM
 #'
+#' @param x \code{fbl_gam} object
+#' @param ... arguments to be passed to methods
+#'
 #' @examples
-#' if (requireNamespace("tsibble")) {
-#' library(tsibble)
-#' tsibble::tourism %>%
-#'   filter(Region == "Melbourne") %>%
-#'   model(mygam = GAM(Trips ~ trend() + season(4))) %>%
+#' \donttest{
+#' tourism_melb <- tsibble::tourism |>
+#'   filter(Region == "Melbourne") |>
+#'   filter(Purpose == "Business") |>
+#'   dplyr::select(c(Quarter, Region, Trips)) |>
+#'   as_tsibble(key = Region, index = Quarter)
+#'
+#' fit <- tourism_melb |>
+#'   model(mygam = GAM(Trips ~ trend() + season(4))) |>
 #'   tidy()
 #' }
 #' @export

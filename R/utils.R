@@ -1,6 +1,5 @@
-cycle_id <- function(tsbl, period) {
-  idx <- tsibble::index(tsbl)
-  seq_along(tsbl[[idx]]) %% period + 1
+cycle_id <- function(data, idx, period) {
+  seq_along(data[[idx]]) %% period + 1
 }
 
 get_season_var <- function(data, idx, period) {
@@ -14,5 +13,5 @@ get_season_var <- function(data, idx, period) {
   } else if (inherits(index_vals, "Date") && period == 7) {
     return(lubridate::wday(index_vals, week_start = 1))
   }
-  cycle_id(data, period)
+  cycle_id(data, idx, period)
 }

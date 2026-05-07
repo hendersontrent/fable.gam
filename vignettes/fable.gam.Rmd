@@ -42,10 +42,10 @@ comment = NA, fig.width = 12, fig.height = 8, cache = FALSE)
 Just like in the [`fable` vignette](https://fable.tidyverts.org/articles/fable.html) we are going to try and forecast the number of domestic travellers to Melbourne, Australia. In the [`tsibble::tourism`](https://tsibble.tidyverts.org/reference/tourism.html) data set, this can be further broken down into 4 reasons of travel: `“business”`, `“holiday”`, `“visiting friends and relatives”` and `“other reasons”`. The variable we are going to try and forecast is the number of overnight trips (000s) represented by the `Trips` variable. We can load the dataset and visualise the time series as follows:
 
 ```{r}
-tourism_melb <- tourism %>%
+tourism_melb <- tourism |>
   filter(Region == "Melbourne")
 
-tourism_melb %>%
+tourism_melb |>
   autoplot(Trips)
 ```
 
@@ -54,32 +54,32 @@ Thanks to the excellent `tsibble` data structure for storing time-series data in
 Here is how easy this is to do in `fable.gam` through the `GAM()` function integrated into the `fable` interface:
 
 ```{r}
-fit <- tourism_melb %>%
+fit <- tourism_melb |>
   model(mygam = GAM(Trips ~ trend() + season(4)))
 ```
 
 We can then easily pipe into the rest of the `fable` functionality, such as the `forecast` to produce forecasts. Here are automatic forecasts using the GAM for the next 5 years:
 
 ```{r}
-fc <- fit %>%
+fc <- fit |>
   forecast(h = "5 years")
 
-fc %>%
+fc |>
   autoplot(tourism_melb)
 ```
 
 We could then quantify model accuracy using the `accuracy` function in `fable`:
 
 ```{r}
-fit %>%
-  accuracy() %>%
+fit |>
+  accuracy() |>
   arrange(MASE)
 ```
 
 Another common task is to extract point forecasts and confidence intervals from the forecast distribution. The [`hilo`](https://pkg.mitchelloharawild.com/distributional/reference/hilo.html) function from the [`distributional`](https://github.com/mitchelloharawild/distributional) package knows how to automatically handle models fit in `fable`:
 
 ```{r}
-fc %>%
+fc |>
   hilo(level = c(80, 95))
 ```
 
@@ -90,23 +90,23 @@ Hopefully this is starting to highlight the power of why integrating new methods
 We can perform a quick sense-check of the approach against more commonly-used forecasting methods such as [exponential smoothing](https://otexts.com/fpp3/expsmooth.html). Here we will just specify an additive trend for the ETS model and let the other components be determined automatically:
 
 ```{r}
-tourism_melb %>%
+tourism_melb |>
   model(
     mygam = GAM(Trips ~ trend() + season(4)),
     ets = ETS(Trips ~ trend("A"))
-  ) %>%
-  forecast(h = "5 years") %>%
+  ) |>
+  forecast(h = "5 years") |>
   autoplot(tourism_melb)
 ```
 
 Or maybe we want to compare against an [ARIMA model](https://otexts.com/fpp3/arima.html):
 
 ```{r}
-tourism_melb %>%
+tourism_melb |>
   model(
     mygam = GAM(Trips ~ trend() + season(4)),
     arima = ARIMA(Trips)
-  ) %>%
-  forecast(h = "5 years") %>%
+  ) |>
+  forecast(h = "5 years") |>
   autoplot(tourism_melb)
 ```

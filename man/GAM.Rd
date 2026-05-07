@@ -10,7 +10,7 @@ GAM(formula, ...)
 \item{formula}{A symbolic description of the model to be fitted of class `formula`.}
 
 \item{...}{further arguments for 
-passing on e.g. to \code{gam.fit} (such as \code{mustart}). }
+passing on e.g. to \code{gam.fit3} (such as \code{mustart}). }
 }
 \description{
 Prepares a generalised additive model specification for use within the `fable` package.
@@ -45,14 +45,34 @@ season(period = NULL)
 \subsection{xreg}{
 Exogenous regressors can be passed into `GAM` just like a regular `mgcv::gam` call by specifying the variable name or any smooth terms you want to model.
 }
+
+\subsection{errors}{
+The `errors` special adds an AR(p) correlation structure to the model residuals via `mgcv::gamm()`.
+When specified, the model is fit using `gamm()` instead of `gam()`, which accounts for autocorrelation
+remaining in the residuals after the smooth terms are included. This is analogous to dynamic regression
+(regression with ARIMA errors) in `fable`.
+
+\preformatted{
+errors(ar = 1)
+}
+
+\describe{
+  \item{ar}{Order of the autoregressive error process. Must be a positive integer. Default: 1.}
+}
+}
 }
 
 \examples{
-if (requireNamespace("tsibble")) {
-library(tsibble)
-tsibble::tourism \%>\%
-  filter(Region == "Melbourne") \%>\%
-  model(mygam = GAM(Trips ~ trend() + season(4)))
+\donttest{
+tourism_melb <- tsibble::tourism |>
+  filter(Region == "Melbourne") |>
+  filter(Purpose == "Business") |>
+  dplyr::select(c(Quarter, Region, Trips)) |>
+  as_tsibble(key = Region, index = Quarter)
+
+fit <- tourism_melb |>
+  model(mygam = GAM(Trips ~ trend() + season(4))) |>
+  forecast(h = "5 years")
 }
 
 }

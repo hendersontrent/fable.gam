@@ -25,13 +25,15 @@ then they should be included as variables of the `new_data` argument.
 \examples{
 
 \donttest{
-if (requireNamespace("tsibble")) {
-library(tsibble)
-tsibble::tourism \%>\%
-  filter(Region == "Melbourne") \%>\%
-  model(mygam = GAM(Trips ~ trend() + season(4))) \%>\%
+tourism_melb <- tsibble::tourism |>
+  filter(Region == "Melbourne") |>
+  filter(Purpose == "Business") |>
+  dplyr::select(c(Quarter, Region, Trips)) |>
+  as_tsibble(key = Region, index = Quarter)
+
+fit <- tourism_melb |>
+  model(mygam = GAM(Trips ~ trend() + season(4))) |>
   forecast(h = "5 years")
-}
 }
 
 }

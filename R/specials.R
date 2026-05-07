@@ -12,5 +12,11 @@ specials_gam <- new_specials(
   xreg = function(...){
     exprs <- enquos(...)
     list(xreg_terms = exprs)
+  },
+  errors = function(ar = 1){
+    if(!is.numeric(ar) || length(ar) != 1 || ar < 1 || ar != floor(ar)){
+      abort("`ar` must be a single positive integer.")
+    }
+    list(ar = as.integer(ar))
   }
 )
