@@ -1,12 +1,33 @@
+#' Generate future sample paths from a GAM
+#'
+#' Generates simulated future sample paths from a fitted GAM. This is the
+#' engine used by fabletools when `forecast(..., bootstrap = TRUE)` is called. Innovations are resampled
+#' from the mean-centred in-sample residuals, giving a non-parametric empirical bootstrap that does not assume Gaussian errors.
+#'
+#' @param x \code{fbl_gam} model object
+#' @param new_data \code{tsibble} of future time points at which to generate paths
+#' @param specials Parsed specials from the model formula.
+#' @param ... arguments to be passed to methods
+#'
+#' @author Trent Henderson
+#' @export
+#'
+generate.fbl_gam <- function(x, new_data, specials = NULL,  ...){
+  new_data <- prepare_gam_newdata(new_data, specials)
+  pred <- stats::predict(x$model, newdata = new_data, se.fit = FALSE)
+  res  <- stats::residuals(x)
+  innov <- sample(na.omit(res) - mean(res, na.rm = TRUE), NROW(new_data), replace = TRUE)
+  dplyr::transmute(new_data, .sim = pred + innov)
+}
+
 #' Produce forecasts from the GAM
 #'
-#' If additional future information is required, such as exogenous variables,
-#' then they should be included as variables of the `new_data` argument.
+#' If additional future information is required, such as exogenous variables, then they should be included as variables of the \code{new_data} argument.
 #'
 #' @inheritParams fable::forecast.ARIMA
-#' @param ... Additional arguments passed to [`stats::predict()`].
+#' @param ... arguments passed to \code{stats::predict()}.
 #'
-#' @return A list of forecasts
+#' @return A vector of distributions.
 #'
 #' @author Trent Henderson
 #'
@@ -20,30 +41,23 @@
 #'   as_tsibble(key = Region, index = Quarter)
 #'
 #' fit <- tourism_melb |>
-#'   model(mygam = GAM(Trips ~ trend() + season(4))) |>
-#'   forecast(h = "5 years")
+#'   model(mygam = GAM(Trips ~ trend() + season(4)))
+#'
+#' # Analytic intervals
+#'
+#' forecast(fit, h = "5 years")
+#'
+#' # Bootstrap intervals
+#'
+#' forecast(fit, h = "5 years", bootstrap = TRUE)
 #' }
 #'
 #' @export
 #'
 forecast.fbl_gam <- function(object, new_data, specials = NULL, ...){
+  new_data <- prepare_gam_newdata(new_data, specials)
   model <- object$model
-  idx_var <- tsibble::index_var(new_data)
-  new_data$timevarnumeric <- as.numeric(new_data[[idx_var]])
-
-  # Add any seasonal variables back
-
-  for(season_spec in specials$season){
-    period <- season_spec$period
-    season_var <- paste0("season_", period)
-    new_data[[season_var]] <- get_season_var(new_data, idx_var, period)
-  }
-
-  # Calculate predictions
-
   preds <- stats::predict(model, newdata = new_data, se.fit = TRUE, ...)
-  # Prediction SE combines mean uncertainty (se.fit) with residual variance (sig2),
-  # giving a proper prediction interval rather than a confidence interval for the mean
   distributional::dist_normal(preds$fit, sqrt(preds$se.fit^2 + model$sig2))
 }
 

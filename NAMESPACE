@@ -3,6 +3,7 @@
 S3method(fitted,fbl_gam)
 S3method(forecast,fbl_gam)
 S3method(format,fbl_gam)
+S3method(generate,fbl_gam)
 S3method(glance,fbl_gam)
 S3method(model_sum,fbl_gam)
 S3method(refit,fbl_gam)

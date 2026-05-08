@@ -15,3 +15,16 @@ get_season_var <- function(data, idx, period) {
   }
   cycle_id(data, idx, period)
 }
+
+# Adds timevarnumeric and any season_N columns to new_data, mirroring what
+# train_gam() does for the training set. Used by both forecast() and generate().
+prepare_gam_newdata <- function(new_data, specials) {
+  idx_var <- tsibble::index_var(new_data)
+  new_data$timevarnumeric <- as.numeric(new_data[[idx_var]])
+  for (season_spec in specials$season) {
+    period <- season_spec$period
+    season_var <- paste0("season_", period)
+    new_data[[season_var]] <- get_season_var(new_data, idx_var, period)
+  }
+  new_data
+}

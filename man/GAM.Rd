@@ -16,10 +16,7 @@ passing on e.g. to \code{gam.fit3} (such as \code{mustart}). }
 Prepares a generalised additive model specification for use within the `fable` package.
 }
 \details{
-The GAM modelling interface uses a `formula` based model specification
-`y ~ x`, where the left of the formula specifies the response variable,
-and the right specifies the model's predictive terms, including any smooth
-functions of exogenous regressors or 'covariates'.
+The GAM modelling interface uses a `formula` based model specification `y ~ x`, where the left of the formula specifies the response variable, and the right specifies the model's predictive terms, including any smooth functions of exogenous regressors
 }
 \section{Specials}{
 
