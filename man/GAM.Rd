@@ -40,7 +40,17 @@ season(period = NULL)
 }
 
 \subsection{xreg}{
-Exogenous regressors can be passed into `GAM` just like a regular `mgcv::gam` call by specifying the variable name or any smooth terms you want to model.
+Exogenous regressors can be included via the `xreg` special.
+
+\preformatted{
+xreg(..., smooth = TRUE, k = -1, bs = "tp")
+}
+
+\describe{
+  \item{smooth}{If \code{TRUE}, numeric variables are automatically wrapped in \code{s()} for smooth non-linear estimation}
+  \item{k}{Basis dimension passed to \code{s()}. Defaults to \code{-1} (mgcv auto-selects). Only used when \code{smooth = TRUE}}
+  \item{bs}{Spline basis type passed to \code{s()}. Defaults to \code{"tp"} (thin plate). Only used when \code{smooth = TRUE}}
+}
 }
 
 \subsection{errors}{
