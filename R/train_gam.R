@@ -42,12 +42,26 @@ train_gam <- function(.data, specials, ...){
     rhs_terms <- c(rhs_terms, paste0("s(", season_var, ", bs = 'cc', k = ", period, ")")) # Cyclic cubic spline to ensure season start and end match up
   }
 
-  # Add any xreg terms
+  # Add any xreg terms. The xreg special pre-evaluates all expressions in the
+  # data mask, so actual column data arrives via xreg_df (not quoted symbols).
+  # make.names() sanitises column labels (e.g. "log(x)" -> "log.x.") so they
+  # are valid R identifiers and formula terms.
 
   if(!is.null(specials$xreg)){
     for(xreg_call in specials$xreg){
-      for(x in xreg_call$xreg_terms){
-        rhs_terms <- c(rhs_terms, rlang::as_label(x))
+      smooth <- xreg_call$smooth
+      k <- xreg_call$k
+      bs <- xreg_call$bs
+      xreg_df <- xreg_call$xreg_df
+      for(col_name in names(xreg_df)){
+        col_data <- xreg_df[[col_name]]
+        safe_name <- make.names(col_name)
+        data[[safe_name]] <- col_data
+        if(smooth && is.numeric(col_data)){
+          rhs_terms <- c(rhs_terms, paste0("s(", safe_name, ", k = ", k, ", bs = '", bs, "')"))
+        } else {
+          rhs_terms <- c(rhs_terms, safe_name)
+        }
       }
     }
   }
@@ -60,8 +74,7 @@ train_gam <- function(.data, specials, ...){
 
   if(!is.null(specials$errors)){
     ar_order <- specials$errors[[1]]$ar
-    fit_full <- mgcv::gamm(formula_obj, data = data,
-                           correlation = nlme::corARMA(p = ar_order, q = 0), ...)
+    fit_full <- mgcv::gamm(formula_obj, data = data, correlation = nlme::corARMA(p = ar_order, q = 0), ...)
     fit <- fit_full$gam
     lme_fit <- fit_full$lme
   }else{
@@ -110,7 +123,17 @@ train_gam <- function(.data, specials, ...){
 #' }
 #'
 #' \subsection{xreg}{
-#' Exogenous regressors can be passed into `GAM` just like a regular `mgcv::gam` call by specifying the variable name or any smooth terms you want to model.
+#' Exogenous regressors can be included via the `xreg` special.
+#'
+#' \preformatted{
+#' xreg(..., smooth = TRUE, k = -1, bs = "tp")
+#' }
+#'
+#' \describe{
+#'   \item{smooth}{If \code{TRUE}, numeric variables are automatically wrapped in \code{s()} for smooth non-linear estimation}
+#'   \item{k}{Basis dimension passed to \code{s()}. Defaults to \code{-1} (mgcv auto-selects). Only used when \code{smooth = TRUE}}
+#'   \item{bs}{Spline basis type passed to \code{s()}. Defaults to \code{"tp"} (thin plate). Only used when \code{smooth = TRUE}}
+#' }
 #' }
 #'
 #' \subsection{errors}{

@@ -15,7 +15,7 @@
 generate.fbl_gam <- function(x, new_data, specials = NULL,  ...){
   new_data <- prepare_gam_newdata(new_data, specials)
   pred <- stats::predict(x$model, newdata = new_data, se.fit = FALSE)
-  res  <- stats::residuals(x)
+  res <- stats::residuals(x)
   innov <- sample(na.omit(res) - mean(res, na.rm = TRUE), NROW(new_data), replace = TRUE)
   dplyr::transmute(new_data, .sim = pred + innov)
 }
@@ -215,4 +215,34 @@ report.fbl_gam <- function(object, digits = max(3, getOption("digits") - 3), ...
 #' @export
 refit.fbl_gam <- function(object, new_data, specials = NULL, ...){
   train_gam(new_data, specials = specials, ...)
+}
+
+#' Interpolate missing values using the GAM
+#'
+#' Replaces \code{NA} values in the response variable with in-sample GAM
+#' predictions evaluated at those time points.
+#'
+#' @param object \code{fbl_gam} model object
+#' @param new_data \code{tsibble} containing observations, some of which may be \code{NA}
+#' @param specials Parsed specials from the model formula.
+#' @param ... arguments to be passed to methods
+#'
+#' @return The \code{new_data} tsibble with missing values replaced by GAM predictions.
+#'
+#' @author Trent Henderson
+#'
+#' @export
+#'
+interpolate.fbl_gam <- function(object, new_data, specials, ...){
+  resp <- tsibble::measured_vars(new_data)[[1]]
+  miss_val <- which(is.na(new_data[[resp]]))
+
+  if(length(miss_val) == 0){
+    return(new_data)
+  }
+
+  full_data <- prepare_gam_newdata(new_data, specials)
+  pred <- stats::predict(object$model, newdata = full_data[miss_val, , drop = FALSE], se.fit = FALSE)
+  new_data[[resp]][miss_val] <- pred
+  new_data
 }
