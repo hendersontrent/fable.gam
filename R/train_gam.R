@@ -83,10 +83,7 @@ train_gam <- function(.data, specials, ...){
 #'
 #' Prepares a generalised additive model specification for use within the `fable` package.
 #'
-#' The GAM modelling interface uses a `formula` based model specification
-#' `y ~ x`, where the left of the formula specifies the response variable,
-#' and the right specifies the model's predictive terms, including any smooth
-#' functions of exogenous regressors or 'covariates'.
+#' The GAM modelling interface uses a `formula` based model specification `y ~ x`, where the left of the formula specifies the response variable, and the right specifies the model's predictive terms, including any smooth functions of exogenous regressors
 #'
 #'
 #' @param formula A symbolic description of the model to be fitted of class `formula`.

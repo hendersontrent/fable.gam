@@ -13,14 +13,13 @@
 
 \item{specials}{(passed by \code{\link[fabletools:forecast]{fabletools::forecast.mdl_df()}}).}
 
-\item{...}{Additional arguments passed to [`stats::predict()`].}
+\item{...}{arguments passed to \code{stats::predict()}.}
 }
 \value{
-A list of forecasts
+A vector of distributions.
 }
 \description{
-If additional future information is required, such as exogenous variables,
-then they should be included as variables of the `new_data` argument.
+If additional future information is required, such as exogenous variables, then they should be included as variables of the \code{new_data} argument.
 }
 \examples{
 
@@ -32,8 +31,15 @@ tourism_melb <- tsibble::tourism |>
   as_tsibble(key = Region, index = Quarter)
 
 fit <- tourism_melb |>
-  model(mygam = GAM(Trips ~ trend() + season(4))) |>
-  forecast(h = "5 years")
+  model(mygam = GAM(Trips ~ trend() + season(4)))
+
+# Analytic intervals
+
+forecast(fit, h = "5 years")
+
+# Bootstrap intervals
+
+forecast(fit, h = "5 years", bootstrap = TRUE)
 }
 
 }

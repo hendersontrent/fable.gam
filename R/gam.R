@@ -5,7 +5,7 @@
 #'
 #' @description Generalised Additive Modelling Interface for 'fable'
 #'
-#' @importFrom stats fitted residuals
+#' @importFrom stats fitted residuals na.omit
 #' @import rlang
 #' @import tibble
 #' @import tsibble
