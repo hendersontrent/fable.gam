@@ -42,10 +42,7 @@ train_gam <- function(.data, specials, ...){
     rhs_terms <- c(rhs_terms, paste0("s(", season_var, ", bs = 'cc', k = ", period, ")")) # Cyclic cubic spline to ensure season start and end match up
   }
 
-  # Add any xreg terms. The xreg special pre-evaluates all expressions in the
-  # data mask, so actual column data arrives via xreg_df (not quoted symbols).
-  # make.names() sanitises column labels (e.g. "log(x)" -> "log.x.") so they
-  # are valid R identifiers and formula terms.
+  # Add any xreg terms
 
   if(!is.null(specials$xreg)){
     for(xreg_call in specials$xreg){
