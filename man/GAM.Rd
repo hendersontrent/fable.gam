@@ -57,7 +57,7 @@ xreg(..., smooth = TRUE, k = -1, bs = "tp")
 The `errors` special adds an AR(p) correlation structure to the model residuals via `mgcv::gamm()`.
 When specified, the model is fit using `gamm()` instead of `gam()`, which accounts for autocorrelation
 remaining in the residuals after the smooth terms are included. This is analogous to dynamic regression
-(regression with ARIMA errors) in `fable`.
+(regression with ARIMA errors) in `fable`. Only supported with the Gaussian family.
 
 \preformatted{
 errors(ar = 1)
@@ -65,6 +65,31 @@ errors(ar = 1)
 
 \describe{
   \item{ar}{Order of the autoregressive error process. Must be a positive integer. Default: 1.}
+}
+}
+
+\subsection{family}{
+The `family` special sets the GLM response family and link function, passed directly to
+\code{mgcv::gam()}. Defaults to \code{gaussian(link = "identity")}.
+
+\preformatted{
+family(family = gaussian, link = NULL)
+}
+
+\describe{
+  \item{family}{A family function (e.g. \code{Gamma}) or a pre-constructed family object
+    (e.g. \code{Gamma(link = "log")}). Any family accepted by \code{mgcv::gam()} is valid.}
+  \item{link}{Link function name as a character string (e.g. \code{"log"}). Only used when
+    \code{family} is a function rather than a pre-built object.}
+}
+
+The analytic forecast distribution is chosen based on the family and link:
+\itemize{
+  \item \code{gaussian} / \code{identity}: \code{dist_normal} (exact).
+  \item \code{gaussian} or \code{Gamma} / \code{log}: \code{dist_lognormal} (the linear predictor
+    is approximately normal on the log scale, so the response is approximately log-normal).
+  \item All other combinations: \code{dist_normal} on the response scale via the delta method
+    (approximation). Bootstrap intervals are recommended for these cases.
 }
 }
 }

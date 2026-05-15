@@ -85,6 +85,14 @@ fc |>
   autoplot(tourism_melb)
 ```
 
+    Warning: `autoplot.fbl_ts()` was deprecated in fabletools 0.6.0.
+    ℹ Please use `ggtime::autoplot.fbl_ts()` instead.
+    ℹ Graphics functions have been moved to the {ggtime} package. Please use
+      `library(ggtime)` instead.
+    This warning is displayed once per session.
+    Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+    generated.
+
 ![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 We could then quantify model accuracy using the `accuracy` function in
@@ -229,6 +237,72 @@ h02 |>
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+## Non-Gaussian likelihoods
+
+`fable.gam` is currently equipped to handle a few model families and
+link functions available to users familiar with fitting GAMs in `mgcv`:
+
+- Gaussian family with any link function (e.g., identity)
+- Gamma family with log link
+- Poisson family with log link
+- Negative binomial family with log link
+
+These are the current options as there are clean mappings between their
+statistical form in `mgcv` and the `distributional` package which stores
+vectorised distribution objects for easy calculations.
+
+To test this functionality, we can simulate some weekly count data from
+a Poisson distribution with a small upward trend and seasonality and
+inspect the raw time series:
+
+``` r
+set.seed(123)
+n_weeks <- 156
+start <- as.Date("2022-01-03")
+dates <- start + (0:(n_weeks - 1)) * 7
+t_coef <- seq_len(n_weeks)
+trend <- 0.004 * t_coef
+month_no <- lubridate::month(dates)
+month_fx <- c(-0.35, -0.25, -0.05,  0.10,  0.25,  0.45, 0.50,  0.40,  0.20,  0.00, -0.20, -0.35)
+seasonal <- month_fx[month_no]
+log_lambda <- 3.0 + trend + seasonal
+counts <- rpois(n_weeks, lambda = exp(log_lambda))
+
+# Convert to tsibble and plot to visualise temporal pattern
+
+weekly_counts <- tsibble(Week = yearweek(dates), Counts = counts, index = Week)
+autoplot(weekly_counts, Counts)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+We can now fit a GAM forecast model and specify the Poisson model family
+using the `family()` special function that is designed to work in
+`fable.gam` (note that you only need to specify the `link` argument of
+`family()` if you are using a Gaussian model family since a log-link is
+used for all others).
+
+``` r
+weekly_counts |>
+  model(gam = GAM(Counts ~ trend() + season(12) + season(52) + family(poisson))) |> 
+  forecast(h = "52 weeks") |>
+  autoplot(weekly_counts)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+We can also fit a negative binomial model to the same data as a
+comparison:
+
+``` r
+weekly_counts |>
+  model(gam = GAM(Counts ~ trend() + season(12) + season(52) + family(mgcv::nb()))) |> 
+  forecast(h = "52 weeks") |>
+  autoplot(weekly_counts)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ## Development notes
 

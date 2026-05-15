@@ -14,8 +14,8 @@
 #'
 generate.fbl_gam <- function(x, new_data, specials = NULL,  ...){
   new_data <- prepare_gam_newdata(new_data, specials)
-  pred <- stats::predict(x$model, newdata = new_data, se.fit = FALSE)
-  res <- stats::residuals(x)
+  pred <- stats::predict(x$model, newdata = new_data, se.fit = FALSE, type = "response")
+  res <- stats::residuals(x$model, type = "response")
   innov <- sample(na.omit(res) - mean(res, na.rm = TRUE), NROW(new_data), replace = TRUE)
   dplyr::transmute(new_data, .sim = pred + innov)
 }
@@ -57,8 +57,32 @@ generate.fbl_gam <- function(x, new_data, specials = NULL,  ...){
 forecast.fbl_gam <- function(object, new_data, specials = NULL, ...){
   new_data <- prepare_gam_newdata(new_data, specials)
   model <- object$model
-  preds <- stats::predict(model, newdata = new_data, se.fit = TRUE, ...)
-  distributional::dist_normal(preds$fit, sqrt(preds$se.fit^2 + model$sig2))
+  fam_name <- model$family$family
+
+  if(fam_name == "gaussian"){
+    preds <- stats::predict(model, newdata = new_data, se.fit = TRUE, type = "response", ...)
+    distributional::dist_normal(preds$fit, sqrt(preds$se.fit^2 + model$sig2))
+
+  } else if(fam_name == "Gamma"){
+    preds <- stats::predict(model, newdata = new_data, se.fit = TRUE, type = "link", ...)
+    distributional::dist_lognormal(preds$fit, sqrt(preds$se.fit^2 + model$sig2))
+
+  } else if(fam_name == "poisson"){
+    preds <- stats::predict(model, newdata = new_data, se.fit = FALSE, type = "response", ...)
+    distributional::dist_poisson(preds)
+
+  } else if(startsWith(fam_name, "Negative Binomial")){
+    preds <- stats::predict(model, newdata = new_data, se.fit = FALSE, type = "response", ...)
+    theta <- model$family$getTheta(trans = TRUE)
+    distributional::dist_negative_binomial(size = theta, prob = theta / (theta + preds))
+
+  } else{
+    rlang::abort(paste0(
+      "Analytic forecast distributions are not implemented for family '", fam_name, "'. ",
+      "Supported families: gaussian, Gamma (log link), poisson (log link), nb (log link). ",
+      "Use bootstrap = TRUE for other families."
+    ))
+  }
 }
 
 #-------------- Fitted values and residuals --------------
@@ -99,7 +123,11 @@ residuals.fbl_gam <- function(object, ...){
 
 #' @export
 model_sum.fbl_gam <- function(x){
-  if (!is.null(x$lme)) "GAM+AR" else "GAM"
+  base <- if(!is.null(x$lme)) "GAM+AR" else "GAM"
+  fam  <- x$model$family$family
+  if(fam == "gaussian") return(base)
+  label <- if(startsWith(fam, "Negative Binomial")) "NB" else fam
+  paste0(base, "(", label, ")")
 }
 
 #' @export
@@ -242,7 +270,7 @@ interpolate.fbl_gam <- function(object, new_data, specials, ...){
   }
 
   full_data <- prepare_gam_newdata(new_data, specials)
-  pred <- stats::predict(object$model, newdata = full_data[miss_val, , drop = FALSE], se.fit = FALSE)
+  pred <- stats::predict(object$model, newdata = full_data[miss_val, , drop = FALSE], se.fit = FALSE, type = "response")
   new_data[[resp]][miss_val] <- pred
   new_data
 }

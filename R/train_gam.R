@@ -67,15 +67,41 @@ train_gam <- function(.data, specials, ...){
   rhs <- rlang::parse_expr(paste(rhs_terms, collapse = " + "))
   formula_obj <- rlang::new_formula(lhs, rhs)
 
-  # Use gamm() with AR correlation structure if errors() special is specified, otherwise use standard gam()
+  # Model family
+
+  if(!is.null(specials$family)){
+    fam_obj <- specials$family[[1]]
+    if(fam_obj$family == "Gamma" && fam_obj$link != "log"){
+      abort("Gamma family requires a log link. Use family(Gamma, link = 'log') or family(Gamma(link = 'log')).")
+    }
+    if(fam_obj$family == "poisson" && fam_obj$link != "log"){
+      abort("Poisson family requires a log link. Use family(poisson) or family(poisson, link = 'log').")
+    }
+    if(startsWith(fam_obj$family, "Negative Binomial") && fam_obj$link != "log"){
+      abort("Negative Binomial family requires a log link. Use family(nb()) which defaults to log link.")
+    }
+  } else {
+    fam_obj <- stats::gaussian()
+  }
+
+  # Use gamm() with AR correlation structure if errors() special is specified, otherwise use standard gam().
+  # Non-Gaussian gamm() fits via penalised quasi-likelihood (PQL), which is an approximation —
+  # AIC/BIC from the lme component are not true likelihoods in that case.
 
   if(!is.null(specials$errors)){
     ar_order <- specials$errors[[1]]$ar
-    fit_full <- mgcv::gamm(formula_obj, data = data, correlation = nlme::corARMA(p = ar_order, q = 0), ...)
+    if(fam_obj$family != "gaussian"){
+      rlang::warn(paste0(
+        fam_obj$family, " family with errors() uses gamm() via penalised quasi-likelihood (PQL). ",
+        "Bootstrap intervals (bootstrap = TRUE) are recommended for prediction intervals."
+      ))
+    }
+    fit_full <- mgcv::gamm(formula_obj, data = data, family = fam_obj,
+                           correlation = nlme::corARMA(p = ar_order, q = 0), ...)
     fit <- fit_full$gam
     lme_fit <- fit_full$lme
   }else{
-    fit <- mgcv::gam(formula_obj, data = data, ...)
+    fit <- mgcv::gam(formula_obj, data = data, family = fam_obj, ...)
     lme_fit <- NULL
   }
 
@@ -137,7 +163,7 @@ train_gam <- function(.data, specials, ...){
 #' The `errors` special adds an AR(p) correlation structure to the model residuals via `mgcv::gamm()`.
 #' When specified, the model is fit using `gamm()` instead of `gam()`, which accounts for autocorrelation
 #' remaining in the residuals after the smooth terms are included. This is analogous to dynamic regression
-#' (regression with ARIMA errors) in `fable`.
+#' (regression with ARIMA errors) in `fable`. Only supported with the Gaussian family.
 #'
 #' \preformatted{
 #' errors(ar = 1)
@@ -145,6 +171,31 @@ train_gam <- function(.data, specials, ...){
 #'
 #' \describe{
 #'   \item{ar}{Order of the autoregressive error process. Must be a positive integer. Default: 1.}
+#' }
+#' }
+#'
+#' \subsection{family}{
+#' The `family` special sets the GLM response family and link function, passed directly to
+#' \code{mgcv::gam()}. Defaults to \code{gaussian(link = "identity")}.
+#'
+#' \preformatted{
+#' family(family = gaussian, link = NULL)
+#' }
+#'
+#' \describe{
+#'   \item{family}{A family function (e.g. \code{Gamma}) or a pre-constructed family object
+#'     (e.g. \code{Gamma(link = "log")}). Any family accepted by \code{mgcv::gam()} is valid.}
+#'   \item{link}{Link function name as a character string (e.g. \code{"log"}). Only used when
+#'     \code{family} is a function rather than a pre-built object.}
+#' }
+#'
+#' The analytic forecast distribution is chosen based on the family and link:
+#' \itemize{
+#'   \item \code{gaussian} / \code{identity}: \code{dist_normal} (exact).
+#'   \item \code{gaussian} or \code{Gamma} / \code{log}: \code{dist_lognormal} (the linear predictor
+#'     is approximately normal on the log scale, so the response is approximately log-normal).
+#'   \item All other combinations: \code{dist_normal} on the response scale via the delta method
+#'     (approximation). Bootstrap intervals are recommended for these cases.
 #' }
 #' }
 #'
