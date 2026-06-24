@@ -16,7 +16,7 @@ get_season_var <- function(data, idx, period) {
   cycle_id(data, idx, period)
 }
 
-# Adds timevarnumeric, season_N, and xreg columns to new_data, mirroring what train_gam() does for the training set.
+# Adds `timevarnumeric`, `season_N`, and `xreg` columns to new_data, mirroring what `train_gam()` does for the training set.
 # Used by both forecast() and generate().
 
 prepare_gam_newdata <- function(new_data, specials) {
