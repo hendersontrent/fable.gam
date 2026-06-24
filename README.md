@@ -1,5 +1,5 @@
 
-# fable.gam
+# fable.gam <img src="man/figures/fablegam.png" align="right" width="120" />
 
 This package provides a tidy R interface to time-series modelling using
 [generalised additive
