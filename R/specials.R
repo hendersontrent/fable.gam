@@ -22,5 +22,15 @@ specials_gam <- new_specials(
       abort("`ar` must be a single positive integer.")
     }
     list(ar = as.integer(ar))
+  },
+  family = function(family = gaussian, link = NULL){
+    if(is.function(family)){
+      fam_obj <- if(!is.null(link)) family(link = link) else family()
+    } else if(inherits(family, "family") || inherits(family, "extended.family")){
+      fam_obj <- family
+    } else {
+      abort("'family' must be a family function (e.g. Gamma) or a family object (e.g. Gamma(link = 'log'), mgcv::nb()).")
+    }
+    fam_obj
   }
 )

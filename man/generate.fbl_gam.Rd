@@ -11,14 +11,13 @@
 
 \item{new_data}{\code{tsibble} of future time points at which to generate paths}
 
-\item{specials}{Parsed specials from the model formula.}
+\item{specials}{Parsed specials from the model formula}
 
 \item{...}{arguments to be passed to methods}
 }
 \description{
-Generates simulated future sample paths from a fitted GAM. This is the
-engine used by fabletools when `forecast(..., bootstrap = TRUE)` is called. Innovations are resampled
-from the mean-centred in-sample residuals, giving a non-parametric empirical bootstrap that does not assume Gaussian errors.
+Generates simulated future sample paths from a fitted `GAM`. Innovations are
+resampled from the in-sample residuals, giving a non-parametric empirical bootstrap.
 }
 \author{
 Trent Henderson

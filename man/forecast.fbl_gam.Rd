@@ -16,14 +16,17 @@
 \item{...}{arguments passed to \code{stats::predict()}.}
 }
 \value{
-A vector of distributions.
+Vector of distributions
 }
 \description{
-If additional future information is required, such as exogenous variables, then they should be included as variables of the \code{new_data} argument.
+Produce forecasts from the GAM
 }
 \examples{
 
 \donttest{
+library(dplyr)
+library(tsibble)
+
 tourism_melb <- tsibble::tourism |>
   filter(Region == "Melbourne") |>
   filter(Purpose == "Business") |>

@@ -12,7 +12,7 @@
 \item{...}{Other arguments passed to methods}
 }
 \value{
-A vector of residuals
+Vector of residuals
 }
 \description{
 Extracts the residuals from an estimated GAM

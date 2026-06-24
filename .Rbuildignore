@@ -10,3 +10,4 @@
 ^Meta$
 ^LICENSE\.md$
 ^data-raw$
+^hex.R

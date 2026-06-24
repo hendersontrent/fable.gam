@@ -1,12 +1,11 @@
 #' Generate future sample paths from a GAM
 #'
-#' Generates simulated future sample paths from a fitted GAM. This is the
-#' engine used by fabletools when `forecast(..., bootstrap = TRUE)` is called. Innovations are resampled
-#' from the mean-centred in-sample residuals, giving a non-parametric empirical bootstrap that does not assume Gaussian errors.
+#' Generates simulated future sample paths from a fitted `GAM`. Innovations are
+#' resampled from the in-sample residuals, giving a non-parametric empirical bootstrap.
 #'
 #' @param x \code{fbl_gam} model object
 #' @param new_data \code{tsibble} of future time points at which to generate paths
-#' @param specials Parsed specials from the model formula.
+#' @param specials Parsed specials from the model formula
 #' @param ... arguments to be passed to methods
 #'
 #' @author Trent Henderson
@@ -14,26 +13,27 @@
 #'
 generate.fbl_gam <- function(x, new_data, specials = NULL,  ...){
   new_data <- prepare_gam_newdata(new_data, specials)
-  pred <- stats::predict(x$model, newdata = new_data, se.fit = FALSE)
-  res <- stats::residuals(x)
+  pred <- stats::predict(x$model, newdata = new_data, se.fit = FALSE, type = "response")
+  res <- stats::residuals(x$model, type = "response")
   innov <- sample(na.omit(res) - mean(res, na.rm = TRUE), NROW(new_data), replace = TRUE)
   dplyr::transmute(new_data, .sim = pred + innov)
 }
 
 #' Produce forecasts from the GAM
 #'
-#' If additional future information is required, such as exogenous variables, then they should be included as variables of the \code{new_data} argument.
-#'
 #' @inheritParams fable::forecast.ARIMA
 #' @param ... arguments passed to \code{stats::predict()}.
 #'
-#' @return A vector of distributions.
+#' @return Vector of distributions
 #'
 #' @author Trent Henderson
 #'
 #' @examples
 #'
 #' \donttest{
+#' library(dplyr)
+#' library(tsibble)
+#'
 #' tourism_melb <- tsibble::tourism |>
 #'   filter(Region == "Melbourne") |>
 #'   filter(Purpose == "Business") |>
@@ -57,8 +57,37 @@ generate.fbl_gam <- function(x, new_data, specials = NULL,  ...){
 forecast.fbl_gam <- function(object, new_data, specials = NULL, ...){
   new_data <- prepare_gam_newdata(new_data, specials)
   model <- object$model
-  preds <- stats::predict(model, newdata = new_data, se.fit = TRUE, ...)
-  distributional::dist_normal(preds$fit, sqrt(preds$se.fit^2 + model$sig2))
+  fam_name <- model$family$family
+
+  if(fam_name == "gaussian"){
+    preds <- stats::predict(model, newdata = new_data, se.fit = TRUE, type = "response", ...)
+    distributional::dist_normal(preds$fit, sqrt(preds$se.fit^2 + model$sig2))
+
+  } else if(fam_name == "Gamma"){
+    preds <- stats::predict(model, newdata = new_data, se.fit = TRUE, type = "link", ...)
+    distributional::dist_lognormal(preds$fit, sqrt(preds$se.fit^2 + model$sig2))
+
+  } else if(fam_name == "poisson"){
+    preds <- stats::predict(model, newdata = new_data, se.fit = FALSE, type = "response", ...)
+    distributional::dist_poisson(preds)
+
+  } else if(startsWith(fam_name, "Negative Binomial")){
+    preds <- stats::predict(model, newdata = new_data, se.fit = FALSE, type = "response", ...)
+    theta <- model$family$getTheta(trans = TRUE)
+    distributional::dist_negative_binomial(size = theta, prob = theta / (theta + preds))
+
+  } else if(startsWith(fam_name, "Beta regression")){
+    preds <- stats::predict(model, newdata = new_data, se.fit = FALSE, type = "response", ...)
+    theta <- model$family$getTheta(trans = TRUE)
+    distributional::dist_beta(shape1 = preds * theta, shape2 = (1 - preds) * theta)
+
+  } else{
+    rlang::abort(paste0(
+      "Analytic forecast distributions are not implemented for family '", fam_name, "'. ",
+      "Supported families: `gaussian`, `Gamma` (log link), `poisson` (log link), `nb` (log link), `betar` (logit link). ",
+      "Use bootstrap = TRUE for other families."
+    ))
+  }
 }
 
 #-------------- Fitted values and residuals --------------
@@ -69,7 +98,7 @@ forecast.fbl_gam <- function(object, new_data, specials = NULL, ...){
 #'
 #' @inheritParams fable::fitted.ARIMA
 #'
-#' @return A vector of fitted values
+#' @return Vector of fitted values
 #'
 #' @author Trent Henderson
 #'
@@ -85,7 +114,7 @@ fitted.fbl_gam <- function(object, ...){
 #'
 #' @inheritParams fable::residuals.ARIMA
 #'
-#' @return A vector of residuals
+#' @return Vector of residuals
 #'
 #' @author Trent Henderson
 #'
@@ -99,7 +128,13 @@ residuals.fbl_gam <- function(object, ...){
 
 #' @export
 model_sum.fbl_gam <- function(x){
-  if (!is.null(x$lme)) "GAM+AR" else "GAM"
+  base <- if(!is.null(x$lme)) "GAM+AR" else "GAM"
+  fam  <- x$model$family$family
+  if(fam == "gaussian") return(base)
+  label <- if(startsWith(fam, "Negative Binomial")) "NB"
+           else if(startsWith(fam, "Beta regression")) "Beta"
+           else fam
+  paste0(base, "(", label, ")")
 }
 
 #' @export
@@ -109,16 +144,17 @@ format.fbl_gam <- function(x, ...){
 
 #' Glance a GAM
 #'
-#' Construct a single row summary of the GAM model.
-#'
-#' Contains a range of model fit statistics.
+#' Construct a single row summary of the GAM model. Contains a range of model fit statistics.
 #'
 #' @inheritParams generics::glance
 #'
-#' @return A one row tibble summarising the model's fit.
+#' @return `tibble` summarising the model fit.
 #'
 #' @examples
 #' \donttest{
+#' library(dplyr)
+#' library(tsibble)
+#'
 #' tourism_melb <- tsibble::tourism |>
 #'   filter(Region == "Melbourne") |>
 #'   filter(Purpose == "Business") |>
@@ -167,6 +203,9 @@ glance.fbl_gam <- function(x, ...){
 #'
 #' @examples
 #' \donttest{
+#' library(dplyr)
+#' library(tsibble)
+#'
 #' tourism_melb <- tsibble::tourism |>
 #'   filter(Region == "Melbourne") |>
 #'   filter(Purpose == "Business") |>
@@ -219,12 +258,11 @@ refit.fbl_gam <- function(object, new_data, specials = NULL, ...){
 
 #' Interpolate missing values using the GAM
 #'
-#' Replaces \code{NA} values in the response variable with in-sample GAM
-#' predictions evaluated at those time points.
+#' Replaces `NA` values in the response variable with in-sample GAM predictions evaluated at those time points.
 #'
 #' @param object \code{fbl_gam} model object
 #' @param new_data \code{tsibble} containing observations, some of which may be \code{NA}
-#' @param specials Parsed specials from the model formula.
+#' @param specials Parsed specials from the model formula
 #' @param ... arguments to be passed to methods
 #'
 #' @return The \code{new_data} tsibble with missing values replaced by GAM predictions.
@@ -242,7 +280,7 @@ interpolate.fbl_gam <- function(object, new_data, specials, ...){
   }
 
   full_data <- prepare_gam_newdata(new_data, specials)
-  pred <- stats::predict(object$model, newdata = full_data[miss_val, , drop = FALSE], se.fit = FALSE)
+  pred <- stats::predict(object$model, newdata = full_data[miss_val, , drop = FALSE], se.fit = FALSE, type = "response")
   new_data[[resp]][miss_val] <- pred
   new_data
 }
