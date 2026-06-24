@@ -16,6 +16,9 @@ Present a tidy summary of a GAM
 }
 \examples{
 \donttest{
+library(dplyr)
+library(tsibble)
+
 tourism_melb <- tsibble::tourism |>
   filter(Region == "Melbourne") |>
   filter(Purpose == "Business") |>

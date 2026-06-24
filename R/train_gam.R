@@ -218,6 +218,9 @@ train_gam <- function(.data, specials, ...){
 #'
 #' @examples
 #' \donttest{
+#' library(dplyr)
+#' library(tsibble)
+#'
 #' tourism_melb <- tsibble::tourism |>
 #'   filter(Region == "Melbourne") |>
 #'   filter(Purpose == "Business") |>

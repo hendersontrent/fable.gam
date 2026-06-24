@@ -103,6 +103,9 @@ The analytic forecast distribution is chosen based on the family and link:
 
 \examples{
 \donttest{
+library(dplyr)
+library(tsibble)
+
 tourism_melb <- tsibble::tourism |>
   filter(Region == "Melbourne") |>
   filter(Purpose == "Business") |>

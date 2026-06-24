@@ -24,6 +24,9 @@ If additional future information is required, such as exogenous variables, then 
 \examples{
 
 \donttest{
+library(dplyr)
+library(tsibble)
+
 tourism_melb <- tsibble::tourism |>
   filter(Region == "Melbourne") |>
   filter(Purpose == "Business") |>

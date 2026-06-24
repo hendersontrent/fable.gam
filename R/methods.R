@@ -34,6 +34,9 @@ generate.fbl_gam <- function(x, new_data, specials = NULL,  ...){
 #' @examples
 #'
 #' \donttest{
+#' library(dplyr)
+#' library(tsibble)
+#'
 #' tourism_melb <- tsibble::tourism |>
 #'   filter(Region == "Melbourne") |>
 #'   filter(Purpose == "Business") |>
@@ -77,9 +80,6 @@ forecast.fbl_gam <- function(object, new_data, specials = NULL, ...){
     distributional::dist_negative_binomial(size = theta, prob = theta / (theta + preds))
 
   } else if(startsWith(fam_name, "Beta regression")){
-    # mgcv parametrises betar() by the mean mu (response scale) and a precision-like
-    # theta, with Var(y) = mu(1 - mu) / (1 + theta). This maps to the standard Beta
-    # shape parameters via shape1 = mu * theta, shape2 = (1 - mu) * theta.
     preds <- stats::predict(model, newdata = new_data, se.fit = FALSE, type = "response", ...)
     theta <- model$family$getTheta(trans = TRUE)
     distributional::dist_beta(shape1 = preds * theta, shape2 = (1 - preds) * theta)
@@ -87,7 +87,7 @@ forecast.fbl_gam <- function(object, new_data, specials = NULL, ...){
   } else{
     rlang::abort(paste0(
       "Analytic forecast distributions are not implemented for family '", fam_name, "'. ",
-      "Supported families: gaussian, Gamma (log link), poisson (log link), nb (log link), betar (logit link). ",
+      "Supported families: `gaussian`, `Gamma` (log link), `poisson` (log link), `nb` (log link), `betar` (logit link). ",
       "Use bootstrap = TRUE for other families."
     ))
   }
@@ -157,6 +157,9 @@ format.fbl_gam <- function(x, ...){
 #'
 #' @examples
 #' \donttest{
+#' library(dplyr)
+#' library(tsibble)
+#'
 #' tourism_melb <- tsibble::tourism |>
 #'   filter(Region == "Melbourne") |>
 #'   filter(Purpose == "Business") |>
@@ -205,6 +208,9 @@ glance.fbl_gam <- function(x, ...){
 #'
 #' @examples
 #' \donttest{
+#' library(dplyr)
+#' library(tsibble)
+#'
 #' tourism_melb <- tsibble::tourism |>
 #'   filter(Region == "Melbourne") |>
 #'   filter(Purpose == "Business") |>
