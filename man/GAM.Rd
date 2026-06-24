@@ -88,6 +88,13 @@ The analytic forecast distribution is chosen based on the family and link:
   \item \code{gaussian} / \code{identity}: \code{dist_normal} (exact).
   \item \code{gaussian} or \code{Gamma} / \code{log}: \code{dist_lognormal} (the linear predictor
     is approximately normal on the log scale, so the response is approximately log-normal).
+  \item \code{poisson} / \code{log}: \code{dist_poisson}.
+  \item \code{nb} (Negative Binomial) / \code{log}: \code{dist_negative_binomial}.
+  \item \code{betar} (Beta regression) / \code{logit}: \code{dist_beta}, with the response mean
+    \code{mu} and precision \code{theta} mapped to shape parameters
+    \code{shape1 = mu * theta} and \code{shape2 = (1 - mu) * theta}. The response must lie in
+    the open interval \code{(0, 1)}. Note that \code{betar} is an mgcv extended family and
+    cannot be combined with \code{errors()} (which fits via \code{gamm()}).
   \item All other combinations: \code{dist_normal} on the response scale via the delta method
     (approximation). Bootstrap intervals are recommended for these cases.
 }

@@ -2,7 +2,7 @@ Package: fable.gam
 Type: Package
 Title: Generalised Additive Modelling Interface for fable
 Version: 0.2.0
-Date: 2026-05-16
+Date: 2026-06-24
 Authors@R: c(
   person("Trent", "Henderson", email = "then6675@uni.sydney.edu.au", role = c("cre", "aut"))
   )

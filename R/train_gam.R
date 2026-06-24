@@ -90,6 +90,13 @@ train_gam <- function(.data, specials, ...){
 
   if(!is.null(specials$errors)){
     ar_order <- specials$errors[[1]]$ar
+    if(inherits(fam_obj, "extended.family")){
+      abort(paste0(
+        "The '", fam_obj$family, "' family is an mgcv extended family and cannot be used with errors(), ",
+        "because gamm() does not support extended families. Fit without errors(), or use a standard ",
+        "exponential family (e.g. gaussian, Gamma, poisson)."
+      ))
+    }
     if(fam_obj$family != "gaussian"){
       rlang::warn(paste0(
         fam_obj$family, " family with errors() uses gamm() via penalised quasi-likelihood (PQL). ",
@@ -194,6 +201,13 @@ train_gam <- function(.data, specials, ...){
 #'   \item \code{gaussian} / \code{identity}: \code{dist_normal} (exact).
 #'   \item \code{gaussian} or \code{Gamma} / \code{log}: \code{dist_lognormal} (the linear predictor
 #'     is approximately normal on the log scale, so the response is approximately log-normal).
+#'   \item \code{poisson} / \code{log}: \code{dist_poisson}.
+#'   \item \code{nb} (Negative Binomial) / \code{log}: \code{dist_negative_binomial}.
+#'   \item \code{betar} (Beta regression) / \code{logit}: \code{dist_beta}, with the response mean
+#'     \code{mu} and precision \code{theta} mapped to shape parameters
+#'     \code{shape1 = mu * theta} and \code{shape2 = (1 - mu) * theta}. The response must lie in
+#'     the open interval \code{(0, 1)}. Note that \code{betar} is an mgcv extended family and
+#'     cannot be combined with \code{errors()} (which fits via \code{gamm()}).
 #'   \item All other combinations: \code{dist_normal} on the response scale via the delta method
 #'     (approximation). Bootstrap intervals are recommended for these cases.
 #' }

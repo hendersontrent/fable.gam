@@ -76,10 +76,18 @@ forecast.fbl_gam <- function(object, new_data, specials = NULL, ...){
     theta <- model$family$getTheta(trans = TRUE)
     distributional::dist_negative_binomial(size = theta, prob = theta / (theta + preds))
 
+  } else if(startsWith(fam_name, "Beta regression")){
+    # mgcv parametrises betar() by the mean mu (response scale) and a precision-like
+    # theta, with Var(y) = mu(1 - mu) / (1 + theta). This maps to the standard Beta
+    # shape parameters via shape1 = mu * theta, shape2 = (1 - mu) * theta.
+    preds <- stats::predict(model, newdata = new_data, se.fit = FALSE, type = "response", ...)
+    theta <- model$family$getTheta(trans = TRUE)
+    distributional::dist_beta(shape1 = preds * theta, shape2 = (1 - preds) * theta)
+
   } else{
     rlang::abort(paste0(
       "Analytic forecast distributions are not implemented for family '", fam_name, "'. ",
-      "Supported families: gaussian, Gamma (log link), poisson (log link), nb (log link). ",
+      "Supported families: gaussian, Gamma (log link), poisson (log link), nb (log link), betar (logit link). ",
       "Use bootstrap = TRUE for other families."
     ))
   }
@@ -126,7 +134,9 @@ model_sum.fbl_gam <- function(x){
   base <- if(!is.null(x$lme)) "GAM+AR" else "GAM"
   fam  <- x$model$family$family
   if(fam == "gaussian") return(base)
-  label <- if(startsWith(fam, "Negative Binomial")) "NB" else fam
+  label <- if(startsWith(fam, "Negative Binomial")) "NB"
+           else if(startsWith(fam, "Beta regression")) "Beta"
+           else fam
   paste0(base, "(", label, ")")
 }
 
