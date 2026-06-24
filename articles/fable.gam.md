@@ -181,6 +181,7 @@ link functions available to users familiar with fitting GAMs in `mgcv`:
 - Gamma family with log link
 - Poisson family with log link
 - Negative binomial family with log link
+- Beta family with logit (default) or probit link
 
 These are the current options as there are clean mappings between their
 statistical form in `mgcv` and the `distributional` package which stores
