@@ -1,12 +1,11 @@
 #' Generate future sample paths from a GAM
 #'
-#' Generates simulated future sample paths from a fitted GAM. This is the
-#' engine used by fabletools when `forecast(..., bootstrap = TRUE)` is called. Innovations are resampled
-#' from the mean-centred in-sample residuals, giving a non-parametric empirical bootstrap that does not assume Gaussian errors.
+#' Generates simulated future sample paths from a fitted `GAM`. Innovations are
+#' resampled from the in-sample residuals, giving a non-parametric empirical bootstrap.
 #'
 #' @param x \code{fbl_gam} model object
 #' @param new_data \code{tsibble} of future time points at which to generate paths
-#' @param specials Parsed specials from the model formula.
+#' @param specials Parsed specials from the model formula
 #' @param ... arguments to be passed to methods
 #'
 #' @author Trent Henderson
@@ -22,12 +21,10 @@ generate.fbl_gam <- function(x, new_data, specials = NULL,  ...){
 
 #' Produce forecasts from the GAM
 #'
-#' If additional future information is required, such as exogenous variables, then they should be included as variables of the \code{new_data} argument.
-#'
 #' @inheritParams fable::forecast.ARIMA
 #' @param ... arguments passed to \code{stats::predict()}.
 #'
-#' @return A vector of distributions.
+#' @return Vector of distributions
 #'
 #' @author Trent Henderson
 #'
@@ -101,7 +98,7 @@ forecast.fbl_gam <- function(object, new_data, specials = NULL, ...){
 #'
 #' @inheritParams fable::fitted.ARIMA
 #'
-#' @return A vector of fitted values
+#' @return Vector of fitted values
 #'
 #' @author Trent Henderson
 #'
@@ -117,7 +114,7 @@ fitted.fbl_gam <- function(object, ...){
 #'
 #' @inheritParams fable::residuals.ARIMA
 #'
-#' @return A vector of residuals
+#' @return Vector of residuals
 #'
 #' @author Trent Henderson
 #'
@@ -147,13 +144,11 @@ format.fbl_gam <- function(x, ...){
 
 #' Glance a GAM
 #'
-#' Construct a single row summary of the GAM model.
-#'
-#' Contains a range of model fit statistics.
+#' Construct a single row summary of the GAM model. Contains a range of model fit statistics.
 #'
 #' @inheritParams generics::glance
 #'
-#' @return A one row tibble summarising the model's fit.
+#' @return `tibble` summarising the model fit.
 #'
 #' @examples
 #' \donttest{
@@ -263,12 +258,11 @@ refit.fbl_gam <- function(object, new_data, specials = NULL, ...){
 
 #' Interpolate missing values using the GAM
 #'
-#' Replaces \code{NA} values in the response variable with in-sample GAM
-#' predictions evaluated at those time points.
+#' Replaces `NA` values in the response variable with in-sample GAM predictions evaluated at those time points.
 #'
 #' @param object \code{fbl_gam} model object
 #' @param new_data \code{tsibble} containing observations, some of which may be \code{NA}
-#' @param specials Parsed specials from the model formula.
+#' @param specials Parsed specials from the model formula
 #' @param ... arguments to be passed to methods
 #'
 #' @return The \code{new_data} tsibble with missing values replaced by GAM predictions.

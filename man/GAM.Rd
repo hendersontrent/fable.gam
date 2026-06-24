@@ -7,7 +7,7 @@
 GAM(formula, ...)
 }
 \arguments{
-\item{formula}{A symbolic description of the model to be fitted of class `formula`.}
+\item{formula}{A symbolic description of the model to be fitted of class `formula`}
 
 \item{...}{further arguments for 
 passing on e.g. to \code{gam.fit3} (such as \code{mustart}). }
@@ -15,24 +15,29 @@ passing on e.g. to \code{gam.fit3} (such as \code{mustart}). }
 \description{
 Prepares a generalised additive model specification for use within the `fable` package.
 }
-\details{
-The GAM modelling interface uses a `formula` based model specification `y ~ x`, where the left of the formula specifies the response variable, and the right specifies the model's predictive terms, including any smooth functions of exogenous regressors
-}
 \section{Specials}{
 
 
 \subsection{trend}{
-The `trend` special is used to specify a seasonal component. This special can be used multiple times for different seasonalities.
+The `trend` special is used to specify a trend component
 
 \preformatted{
 trend()
 }
 }
 
+\subsection{trend2}{
+The `trend2` special is used to specify a nonlinear trend component that is modelled via smooth functions
+
+\preformatted{
+trend2()
+}
+}
+
 \subsection{season}{
 The `season` special is used to specify a seasonal component. This special can be used multiple times for different seasonalities.
 
-**NOTE: The inputs controlling the seasonal `period` refer to the number of observations in each seasonal period, not the number of days.**
+**NOTE: The inputs controlling the seasonal `period` refer to the number of time points in each seasonal period.**
 
 \preformatted{
 season(period = NULL)
@@ -47,56 +52,35 @@ xreg(..., smooth = TRUE, k = -1, bs = "tp")
 }
 
 \describe{
-  \item{smooth}{If \code{TRUE}, numeric variables are automatically wrapped in \code{s()} for smooth non-linear estimation}
-  \item{k}{Basis dimension passed to \code{s()}. Defaults to \code{-1} (mgcv auto-selects). Only used when \code{smooth = TRUE}}
+  \item{smooth}{If \code{TRUE}, numeric variables are automatically wrapped in \code{s()} for smooth function estimation}
+  \item{k}{Basis dimension passed to \code{s()}. Defaults to \code{-1} (whereby mgcv automatically chooses k). Only used when \code{smooth = TRUE}}
   \item{bs}{Spline basis type passed to \code{s()}. Defaults to \code{"tp"} (thin plate). Only used when \code{smooth = TRUE}}
 }
 }
 
 \subsection{errors}{
-The `errors` special adds an AR(p) correlation structure to the model residuals via `mgcv::gamm()`.
-When specified, the model is fit using `gamm()` instead of `gam()`, which accounts for autocorrelation
-remaining in the residuals after the smooth terms are included. This is analogous to dynamic regression
-(regression with ARIMA errors) in `fable`. Only supported with the Gaussian family.
+The `errors` special adds an autoregressive correlation structure to the model residuals.
+When specified, the model is fit using `gamm()` instead of `gam()`.
 
 \preformatted{
 errors(ar = 1)
 }
 
 \describe{
-  \item{ar}{Order of the autoregressive error process. Must be a positive integer. Default: 1.}
+  \item{ar}{Order of the autoregressive error process. Must be a positive integer. Defaults to 1}
 }
 }
 
 \subsection{family}{
-The `family` special sets the GLM response family and link function, passed directly to
-\code{mgcv::gam()}. Defaults to \code{gaussian(link = "identity")}.
+The `family` special sets the response family and link function, passed directly to \code{mgcv::gam()}. Defaults to \code{gaussian(link = "identity")}
 
 \preformatted{
 family(family = gaussian, link = NULL)
 }
 
 \describe{
-  \item{family}{A family function (e.g. \code{Gamma}) or a pre-constructed family object
-    (e.g. \code{Gamma(link = "log")}). Any family accepted by \code{mgcv::gam()} is valid.}
-  \item{link}{Link function name as a character string (e.g. \code{"log"}). Only used when
-    \code{family} is a function rather than a pre-built object.}
-}
-
-The analytic forecast distribution is chosen based on the family and link:
-\itemize{
-  \item \code{gaussian} / \code{identity}: \code{dist_normal} (exact).
-  \item \code{gaussian} or \code{Gamma} / \code{log}: \code{dist_lognormal} (the linear predictor
-    is approximately normal on the log scale, so the response is approximately log-normal).
-  \item \code{poisson} / \code{log}: \code{dist_poisson}.
-  \item \code{nb} (Negative Binomial) / \code{log}: \code{dist_negative_binomial}.
-  \item \code{betar} (Beta regression) / \code{logit}: \code{dist_beta}, with the response mean
-    \code{mu} and precision \code{theta} mapped to shape parameters
-    \code{shape1 = mu * theta} and \code{shape2 = (1 - mu) * theta}. The response must lie in
-    the open interval \code{(0, 1)}. Note that \code{betar} is an mgcv extended family and
-    cannot be combined with \code{errors()} (which fits via \code{gamm()}).
-  \item All other combinations: \code{dist_normal} on the response scale via the delta method
-    (approximation). Bootstrap intervals are recommended for these cases.
+  \item{family}{Family function (e.g. \code{Gamma}) or family function with link function (e.g. \code{Gamma(link = "log")})}
+  \item{link}{Link function name as a character string (e.g. \code{"log"})}
 }
 }
 }

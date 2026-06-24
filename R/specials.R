@@ -29,7 +29,7 @@ specials_gam <- new_specials(
     } else if(inherits(family, "family") || inherits(family, "extended.family")){
       fam_obj <- family
     } else {
-      abort("'family' must be a family function (e.g. Gamma) or a family object (e.g. Gamma(link = 'log'), nb()).")
+      abort("'family' must be a family function (e.g. Gamma) or a family object (e.g. Gamma(link = 'log'), mgcv::nb()).")
     }
     fam_obj
   }

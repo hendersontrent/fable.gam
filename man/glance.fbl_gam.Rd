@@ -12,13 +12,10 @@
 \item{...}{other arguments passed to methods}
 }
 \value{
-A one row tibble summarising the model's fit.
+`tibble` summarising the model fit.
 }
 \description{
-Construct a single row summary of the GAM model.
-}
-\details{
-Contains a range of model fit statistics.
+Construct a single row summary of the GAM model. Contains a range of model fit statistics.
 }
 \examples{
 \donttest{

@@ -12,7 +12,7 @@
 \item{...}{Other arguments passed to methods}
 }
 \value{
-A vector of fitted values
+Vector of fitted values
 }
 \description{
 Extracts the fitted values from an estimated GAM

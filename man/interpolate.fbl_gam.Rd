@@ -11,7 +11,7 @@
 
 \item{new_data}{\code{tsibble} containing observations, some of which may be \code{NA}}
 
-\item{specials}{Parsed specials from the model formula.}
+\item{specials}{Parsed specials from the model formula}
 
 \item{...}{arguments to be passed to methods}
 }
@@ -19,8 +19,7 @@
 The \code{new_data} tsibble with missing values replaced by GAM predictions.
 }
 \description{
-Replaces \code{NA} values in the response variable with in-sample GAM
-predictions evaluated at those time points.
+Replaces `NA` values in the response variable with in-sample GAM predictions evaluated at those time points.
 }
 \author{
 Trent Henderson
