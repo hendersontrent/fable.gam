@@ -36,3 +36,4 @@ Suggests:
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 RoxygenNote: 7.3.3
+URL: https://hendersontrent.github.io/fable.gam/

@@ -303,9 +303,3 @@ weekly_counts |>
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
-
-## Development notes
-
-`fable.gam` is very much a work in progress. Not all current `fable`
-model functionality has been integrated yet and there may be issues with
-model estimation until further testing and validation is performed.

@@ -176,7 +176,3 @@ weekly_counts |>
   forecast(h = "52 weeks") |>
   autoplot(weekly_counts)
 ```
-
-## Development notes
-
-`fable.gam` is very much a work in progress. Not all current `fable` model functionality has been integrated yet and there may be issues with model estimation until further testing and validation is performed.
