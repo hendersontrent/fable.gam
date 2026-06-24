@@ -7,7 +7,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/hendersontrent/fable.gam/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/hendersontrent/fable.gam/blob/v0.2/DESCRIPTION)
 
 Henderson T (2026). *fable.gam: Generalised Additive Modelling Interface
 for fable*. R package version 0.2.0,
