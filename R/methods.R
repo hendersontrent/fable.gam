@@ -65,7 +65,9 @@ forecast.fbl_gam <- function(object, new_data, specials = NULL, ...){
 
   } else if(fam_name == "Gamma"){
     preds <- stats::predict(model, newdata = new_data, se.fit = TRUE, type = "link", ...)
-    distributional::dist_lognormal(preds$fit, sqrt(preds$se.fit^2 + model$sig2))
+    mu <- exp(preds$fit)
+    v <- preds$se.fit^2 + model$sig2          # log-scale variance: estimation + dispersion
+    distributional::dist_gamma(shape = 1 / v, rate = 1 / (mu * v))
 
   } else if(fam_name == "poisson"){
     preds <- stats::predict(model, newdata = new_data, se.fit = FALSE, type = "response", ...)
