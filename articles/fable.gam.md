@@ -96,10 +96,10 @@ fit |>
  [38;5;246m# A tibble: 4 × 13 [39m
   Region    State  Purpose .model .type        ME  RMSE   MAE    MPE  MAPE  MASE
    [3m [38;5;246m<chr> [39m [23m      [3m [38;5;246m<chr> [39m [23m   [3m [38;5;246m<chr> [39m [23m    [3m [38;5;246m<chr> [39m [23m   [3m [38;5;246m<chr> [39m [23m      [3m [38;5;246m<dbl> [39m [23m  [3m [38;5;246m<dbl> [39m [23m  [3m [38;5;246m<dbl> [39m [23m   [3m [38;5;246m<dbl> [39m [23m  [3m [38;5;246m<dbl> [39m [23m  [3m [38;5;246m<dbl> [39m [23m
- [38;5;250m1 [39m Melbourne Victo… Busine… mygam  Trai…  1.26 [38;5;246me [39m [31m-13 [39m  52.0  39.7 - [31m1 [39m [31m. [39m [31m44 [39m   8.88 0.640
- [38;5;250m2 [39m Melbourne Victo… Visiti… mygam  Trai… - [31m1 [39m [31m. [39m [31m92 [39m [38;5;246me [39m [31m-13 [39m  52.1  41.4 - [31m0 [39m [31m. [39m [31m751 [39m  6.76 0.660
- [38;5;250m3 [39m Melbourne Victo… Holiday mygam  Trai… - [31m1 [39m [31m. [39m [31m21 [39m [38;5;246me [39m [31m-14 [39m  50.1  38.9 - [31m0 [39m [31m. [39m [31m990 [39m  7.79 0.706
- [38;5;250m4 [39m Melbourne Victo… Other   mygam  Trai… - [31m1 [39m [31m. [39m [31m69 [39m [38;5;246me [39m [31m-14 [39m  19.1  15.8 - [31m4 [39m [31m. [39m [31m64 [39m  18.1  0.710
+ [38;5;250m1 [39m Melbourne Victo… Busine… mygam  Trai…  1.17 [38;5;246me [39m [31m-13 [39m  52.0  39.7 - [31m1 [39m [31m. [39m [31m44 [39m   8.88 0.640
+ [38;5;250m2 [39m Melbourne Victo… Visiti… mygam  Trai… - [31m2 [39m [31m. [39m [31m39 [39m [38;5;246me [39m [31m-13 [39m  52.1  41.4 - [31m0 [39m [31m. [39m [31m751 [39m  6.76 0.660
+ [38;5;250m3 [39m Melbourne Victo… Holiday mygam  Trai… - [31m2 [39m [31m. [39m [31m56 [39m [38;5;246me [39m [31m-14 [39m  50.1  38.9 - [31m0 [39m [31m. [39m [31m990 [39m  7.79 0.706
+ [38;5;250m4 [39m Melbourne Victo… Other   mygam  Trai… - [31m1 [39m [31m. [39m [31m30 [39m [38;5;246me [39m [31m-14 [39m  19.1  15.8 - [31m4 [39m [31m. [39m [31m64 [39m  18.1  0.710
  [38;5;246m# ℹ 2 more variables: RMSSE <dbl>, ACF1 <dbl> [39m
 ```
 
